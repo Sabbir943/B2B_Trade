@@ -24,7 +24,7 @@ export default function HeroBanner() {
           quality={72}
           className="object-cover object-center saturate-[0.85]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/97 via-white/93 to-white/82 lg:bg-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/92 via-white/82 to-white/60 lg:bg-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-white from-[12%] via-white/92 via-[48%] to-white/0 to-[82%]" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/55 to-transparent" />
       </div>
