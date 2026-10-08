@@ -49,7 +49,7 @@ export default function MarketSearch({ id, size = "md", className = "" }) {
         id={id}
         name="q"
         type="search"
-        placeholder="Search products, suppliers or buy requirements"
+        placeholder="Search products, suppliers or buying requests"
         className={`min-w-0 flex-1 bg-transparent px-3 text-ink placeholder:text-slate-400 focus:outline-none ${
           large ? "py-4 text-[15px]" : "py-3 text-sm"
         }`}

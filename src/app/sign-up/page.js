@@ -4,6 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import BrandLogo from "@/components/brand-logo";
+import { Button, Field, Input } from "@/components/ui";
+import { CheckIcon } from "@/components/icons";
+import { APP_NAME } from "@/lib/brand";
+
+const perks = [
+  "Post buy requirements and receive quotes",
+  "List products with HS-coded discovery",
+  "Free company verification badge",
+];
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -29,100 +39,126 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/onboarding");
     router.refresh();
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Create your account
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Start trading with B2B Trade.
-        </p>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-12">
+      <BrandLogo className="mb-8" />
 
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+      <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="eyebrow-text">Free forever plan</p>
+          <h1 className="mt-3 font-display text-2xl font-bold text-primary">
+            Create your account
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Join {APP_NAME} as a buyer, supplier or both — no card required.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <Field label="Full name" required>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                placeholder="Ayesha Khan"
+              />
+            </Field>
+
+            <Field label="Work email" required>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="you@company.com"
+              />
+            </Field>
+
+            <Field label="Password" hint="At least 8 characters" required>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                placeholder="Create a password"
+              />
+            </Field>
+
+            {error ? (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </p>
+            ) : null}
+
+            <Button
+              type="submit"
+              variant="accent"
+              disabled={pending}
+              className="w-full"
             >
-              Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              required
-              placeholder="Ayesha Khan"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-            />
-          </div>
+              {pending ? "Creating account…" : "Join Free"}
+            </Button>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="you@company.com"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              placeholder="At least 8 characters"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-            />
-          </div>
-
-          {error ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
-              {error}
+            <p className="text-[12px] leading-5 text-slate-500">
+              By joining you agree to the{" "}
+              <Link href="/legal/terms" className="font-semibold text-primary hover:underline">
+                Terms of Use
+              </Link>{" "}
+              and{" "}
+              <Link href="/legal/privacy" className="font-semibold text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              .
             </p>
-          ) : null}
+          </form>
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="mt-1 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-          >
-            {pending ? "Creating account..." : "Sign up"}
-          </button>
-        </form>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Already a member?{" "}
+            <Link
+              href="/sign-in"
+              className="font-semibold text-primary hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
 
-        <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Already have an account?{" "}
-          <Link
-            href="/sign-in"
-            className="font-medium text-zinc-900 underline underline-offset-4 dark:text-zinc-50"
-          >
-            Sign in
-          </Link>
-        </p>
+        <aside className="rounded-2xl bg-primary p-6 text-white">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
+            What you get
+          </p>
+          <ul className="mt-4 space-y-3">
+            {perks.map((perk) => (
+              <li key={perk} className="flex gap-2.5 text-sm leading-6 text-white/85">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/15 text-white">
+                  <CheckIcon className="h-3.5 w-3.5" />
+                </span>
+                {perk}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 space-y-3 border-t border-white/15 pt-5 text-[13px] leading-6 text-white/70">
+            <p>
+              Upgrades later if you need them: unlimited contacts, featured
+              listings and desk hours.
+            </p>
+            <Link
+              href="/membership"
+              className="inline-block font-semibold text-white underline underline-offset-4"
+            >
+              See membership plans
+            </Link>
+          </div>
+        </aside>
       </div>
     </main>
   );

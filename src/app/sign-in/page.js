@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import BrandLogo from "@/components/brand-logo";
+import { Button, Field, Input } from "@/components/ui";
+import { APP_NAME } from "@/lib/brand";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -34,77 +37,91 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-12">
+      <BrandLogo className="mb-8" />
+
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <p className="eyebrow-text">Member access</p>
+        <h1 className="mt-3 font-display text-2xl font-bold text-primary">
           Welcome back
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Sign in to continue to B2B Trade.
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Sign in to continue to {APP_NAME} — your inquiries, listings and trade
+          records are waiting.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Email
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <Field label="Work email" required>
+            <Input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
               required
               placeholder="you@company.com"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             />
-          </div>
+          </Field>
 
           <div>
-            <label
-              htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Password
-            </label>
-            <input
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <span className="text-[13px] font-semibold text-ink">
+                Password<span className="text-danger">*</span>
+              </span>
+              <Link
+                href="/forgot-password"
+                className="text-[13px] font-semibold text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <Input
               id="password"
               name="password"
               type="password"
               autoComplete="current-password"
               required
               placeholder="Your password"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             />
           </div>
 
           {error ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}
             </p>
           ) : null}
 
-          <button
+          <Button
             type="submit"
+            variant="navy"
             disabled={pending}
-            className="mt-1 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            className="w-full"
           >
-            {pending ? "Signing in..." : "Sign in"}
-          </button>
+            {pending ? "Signing in…" : "Sign in"}
+          </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="mt-6 rounded-xl bg-surface p-4 text-center text-[13px] leading-6 text-slate-600">
+          Preview tip: create a free account to explore the member dashboard,
+          staff admin and Super-Admin console.
+        </div>
+
+        <p className="mt-5 text-center text-sm text-slate-500">
           No account yet?{" "}
           <Link
             href="/sign-up"
-            className="font-medium text-zinc-900 underline underline-offset-4 dark:text-zinc-50"
+            className="font-semibold text-primary hover:underline"
           >
-            Sign up
+            Join Free
           </Link>
         </p>
       </div>
+
+      <p className="mt-6 text-center text-[13px] text-slate-500">
+        Trouble signing in?{" "}
+        <Link href="/contact" className="font-semibold text-primary hover:underline">
+          Contact support
+        </Link>
+      </p>
     </main>
   );
 }

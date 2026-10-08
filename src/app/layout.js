@@ -1,5 +1,6 @@
 import { Archivo, Inter } from "next/font/google";
 import "./globals.css";
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/brand";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -14,9 +15,11 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "TradeBridge Bangladesh — Verified B2B Export Marketplace",
-  description:
-    "Find verified Bangladeshi suppliers and export-ready products, post buy requirements, and trade globally with verification and trade support at every step.",
+  title: {
+    default: `${APP_NAME} — ${APP_TAGLINE}`,
+    template: `%s · ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({ children }) {

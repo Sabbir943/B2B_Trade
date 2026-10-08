@@ -12,5 +12,7 @@ export function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard"],
+  // Fast unauthenticated gate; real role checks run server-side in each
+  // layout/page (src/lib/session.js).
+  matcher: ["/dashboard", "/admin", "/console"],
 };
