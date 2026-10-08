@@ -25,7 +25,7 @@ export const auth = betterAuth({
     requireEmailVerification: true,
   },
   emailVerification: {
-    // OTP emails go out through our own backend/ service, not better-auth.
+    // OTP emails go out through our own route handlers (/api/otp/*), not better-auth.
     sendOnSignUp: false,
   },
   user: {

@@ -1,6 +1,6 @@
-// Same-origin by default: requests go to this app's own URL and Next.js
-// rewrites them to the Express backend (see next.config.mjs).
-// Override only if you deliberately want the browser to call the backend directly.
+// Same-origin: the OTP endpoints are Next.js route handlers in this app
+// (src/app/api/otp/*), so the browser always calls its own URL.
+// Override only if you deliberately want to point at another host.
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
 async function post(path, body) {

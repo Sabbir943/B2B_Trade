@@ -10,8 +10,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Express OTP API has its own runtime (plain Node, no Next rules):
-    "backend/**",
   ]),
 ]);
 
