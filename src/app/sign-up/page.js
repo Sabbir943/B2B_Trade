@@ -39,8 +39,8 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/onboarding");
-    router.refresh();
+    const address = String(form.get("email") || "").trim().toLowerCase();
+    router.push(`/verify-otp?email=${encodeURIComponent(address)}&new=1`);
   }
 
   return (

@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import BrandLogo from "@/components/brand-logo";
 import { Button, Field, Input } from "@/components/ui";
 import { APP_NAME } from "@/lib/brand";
 
+function VerifiedFlash() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("verified") !== "1") return null;
+  return (
+    <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+      Email verified — sign in to continue.
+    </p>
+  );
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
+  const [unverified, setUnverified] = useState(null);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -28,6 +39,13 @@ export default function SignInPage() {
     setPending(false);
 
     if (error) {
+      if (
+        error.code === "EMAIL_NOT_VERIFIED" ||
+        /not verified/i.test(error.message ?? "")
+      ) {
+        setUnverified(String(form.get("email") || "").trim().toLowerCase());
+        return;
+      }
       setError(error.message ?? "Invalid email or password.");
       return;
     }
@@ -49,6 +67,10 @@ export default function SignInPage() {
           Sign in to continue to {APP_NAME} — your inquiries, listings and trade
           records are waiting.
         </p>
+
+        <Suspense fallback={null}>
+          <VerifiedFlash />
+        </Suspense>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <Field label="Work email" required>
@@ -84,7 +106,31 @@ export default function SignInPage() {
             />
           </div>
 
-          {error ? (
+          {unverified ? (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3">
+              <p className="text-sm font-semibold text-amber-900">
+                Email not verified yet
+              </p>
+              <p className="mt-1 text-[13px] leading-5 text-amber-800">
+                Enter the 6-digit code we&apos;ll email to{" "}
+                <strong>{unverified}</strong> to activate your account, then
+                sign in.
+              </p>
+              <Button
+                type="button"
+                variant="navy"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() =>
+                  router.push(
+                    `/verify-otp?email=${encodeURIComponent(unverified)}&new=1`,
+                  )
+                }
+              >
+                Send verification code
+              </Button>
+            </div>
+          ) : error ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}
             </p>
