@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { categories, insights, requirements, siteStats } from "@/lib/catalog";
 import { shell } from "./shell";
 import { Badge, Button, EmptyState, SectionTitle } from "./ui";
@@ -23,6 +24,21 @@ const featuredSlugs = [
   "textile-garment-accessories",
 ];
 
+const featuredImages = {
+  spices:
+    "https://images.unsplash.com/photo-1578428295193-be8ecc768ea5?auto=format&fit=crop&w=1200&q=80",
+  chemicals:
+    "https://images.unsplash.com/photo-1780752849375-fd8df4632dae?auto=format&fit=crop&w=1200&q=80",
+  "construction-raw-materials":
+    "https://images.unsplash.com/photo-1600714843799-d0e45ea07425?auto=format&fit=crop&w=1200&q=80",
+  "feed-ingredients":
+    "https://images.unsplash.com/photo-1559154788-600688ac4e7a?auto=format&fit=crop&w=1200&q=80",
+  "agro-products":
+    "https://images.unsplash.com/photo-1783325049940-63c42ce7c1ea?auto=format&fit=crop&w=1200&q=80",
+  "textile-garment-accessories":
+    "https://images.unsplash.com/photo-1758269664127-1f744a56e06c?auto=format&fit=crop&w=1200&q=80",
+};
+
 export function TrustStrip() {
   if (!siteStats.enabled) return null;
   return (
@@ -45,7 +61,10 @@ export function TrustStrip() {
 
 export function FeaturedCategories() {
   const items = featuredSlugs
-    .map((slug) => categories.find((category) => category.slug === slug))
+    .map((slug) => {
+      const category = categories.find((entry) => entry.slug === slug);
+      return category ? { ...category, image: featuredImages[slug] } : null;
+    })
     .filter(Boolean);
 
   return (
@@ -66,20 +85,44 @@ export function FeaturedCategories() {
             <Link
               key={category.slug}
               href={`/categories/${category.slug}`}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative isolate flex h-72 flex-col justify-end overflow-hidden rounded-2xl border border-slate-200 bg-primary shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              <div className="grid-map relative flex h-40 items-end justify-between gap-3 rounded-t-2xl bg-gradient-to-br from-primary via-[#153050] to-[#1e4168] p-4 sm:h-44">
-                <span className="font-display text-base font-bold leading-tight text-white">
+              <Image
+                src={category.image}
+                alt={`${category.name} — ${category.blurb}`}
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover transition duration-500 group-hover:scale-105"
+              />
+              <span className="absolute inset-0 bg-gradient-to-t from-[#06263f]/95 via-[#0a5486]/60 to-[#0a5486]/5" />
+              <span className="grid-map absolute inset-0 opacity-40" />
+
+              <span className="absolute right-4 top-4 rounded-md bg-white/15 px-2 py-1 font-mono text-[11px] font-bold text-white ring-1 ring-white/25 backdrop-blur-sm">
+                HS {category.hs}
+              </span>
+
+              <div className="relative p-5">
+                <h3 className="font-display text-lg font-bold leading-snug text-white">
                   {category.name}
-                </span>
-                <span className="rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white ring-1 ring-white/25">
-                  HS {category.hs}
-                </span>
-              </div>
-              <div className="flex items-center justify-end gap-3 px-4 py-3">
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-primary">
-                  Browse
-                  <ArrowRightIcon className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                </h3>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-white/75">
+                  {category.blurb}
+                </p>
+
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {category.sub.slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/85 ring-1 ring-white/15"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <span className="mt-4 flex items-center gap-1.5 text-[13px] font-bold text-accent">
+                  Browse category
+                  <ArrowRightIcon className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
                 </span>
               </div>
             </Link>
