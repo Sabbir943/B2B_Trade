@@ -1,12 +1,12 @@
-import { dashboard } from "@/lib/catalog";
-import { Avatar, Badge, Button } from "@/components/ui";
+import { Button, EmptyState } from "@/components/ui";
 import { InboxIcon } from "@/components/icons";
-import { Pill, SampleNote, Section, WorkspaceHeader } from "@/components/workspace";
+import { Section, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 
 export const metadata = { title: "Inquiries" };
 
 const filters = ["All", "New", "Negotiating", "Sampling", "Closed"];
+const inquiries = [];
 
 export default async function InquiriesPage() {
   await requirePermission("member.inquiries");
@@ -14,8 +14,8 @@ export default async function InquiriesPage() {
     filters.map((filter) => [
       filter,
       filter === "All"
-        ? dashboard.inquiries.length
-        : dashboard.inquiries.filter((item) => item.stage === filter).length,
+        ? inquiries.length
+        : inquiries.filter((item) => item.stage === filter).length,
     ])
   );
 
@@ -47,31 +47,16 @@ export default async function InquiriesPage() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {dashboard.inquiries.map((item) => (
-          <div
-            key={item.subject}
-            className="panel flex flex-col gap-3 p-5 sm:flex-row sm:items-center"
-          >
-            <Avatar name={item.from} className="h-11 w-11 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-ink">
-                {item.from}
-                <Badge tone="slate">{item.country}</Badge>
-                {item.unread ? <Badge tone="navy">Unread</Badge> : null}
-              </p>
-              <p className="mt-0.5 text-sm text-slate-600">{item.subject}</p>
-              <p className="mt-1 text-[12px] text-slate-400">Last activity · {item.time}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <Pill>{item.stage}</Pill>
-              <Button variant="navy" size="sm">
-                Open thread
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <EmptyState
+        icon={<InboxIcon className="h-5 w-5" />}
+        title="No inquiries yet"
+        text="When buyers contact you through a listing, the conversation opens here and stays on-platform."
+        action={
+          <Button href="/dashboard/products" variant="navy" size="sm">
+            Add a product
+          </Button>
+        }
+      />
 
       <div className="mt-6 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <InboxIcon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
@@ -93,8 +78,6 @@ export default async function InquiriesPage() {
           ))}
         </div>
       </Section>
-
-      <SampleNote />
     </>
   );
 }

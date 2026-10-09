@@ -26,17 +26,17 @@ const featuredSlugs = [
 
 const featuredImages = {
   spices:
-    "https://images.unsplash.com/photo-1578428295193-be8ecc768ea5?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1635355995448-77b02d33621d?auto=format&fit=crop&w=1200&h=800&q=80",
   chemicals:
-    "https://images.unsplash.com/photo-1780752849375-fd8df4632dae?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1620203853151-496c7228306c?auto=format&fit=crop&w=1200&h=800&q=80",
   "construction-raw-materials":
-    "https://images.unsplash.com/photo-1600714843799-d0e45ea07425?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1763771420583-ff167240e281?auto=format&fit=crop&w=1200&h=800&q=80",
   "feed-ingredients":
-    "https://images.unsplash.com/photo-1559154788-600688ac4e7a?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1782852580207-11c100a628e2?auto=format&fit=crop&w=1200&h=800&q=80",
   "agro-products":
-    "https://images.unsplash.com/photo-1783325049940-63c42ce7c1ea?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1761549849498-8cf23a31329d?auto=format&fit=crop&w=1200&h=800&q=80",
   "textile-garment-accessories":
-    "https://images.unsplash.com/photo-1758269664127-1f744a56e06c?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1552710307-537199cd41c0?auto=format&fit=crop&w=1200&h=800&q=80",
 };
 
 export function TrustStrip() {

@@ -1,20 +1,22 @@
-import { dashboard, requirements as board } from "@/lib/catalog";
+import { requirements as board } from "@/lib/catalog";
 import { Badge, Button, EmptyState } from "@/components/ui";
-import { ClipboardIcon } from "@/components/icons";
-import { DataTable, SampleNote, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
+import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import Link from "next/link";
 import { requirePermission } from "@/lib/session";
 
 export const metadata = { title: "My requirements" };
 
+const posts = [];
+
+const stats = [
+  { label: "Open posts", value: "0", hint: "No activity yet" },
+  { label: "Quotes received", value: "0", hint: "No activity yet" },
+  { label: "Awarded", value: "0", hint: "No activity yet" },
+  { label: "Median response", value: "—", hint: "No activity yet" },
+];
+
 export default async function RequirementsPage() {
   await requirePermission("member.requirements");
-  const stats = [
-    { label: "Open posts", value: "1", hint: "Receiving quotes" },
-    { label: "Quotes received", value: "21", hint: "Across all posts" },
-    { label: "Awarded", value: "1", hint: "Order in progress" },
-    { label: "Median response", value: "6 hrs", hint: "Board average" },
-  ];
 
   return (
     <>
@@ -40,7 +42,8 @@ export default async function RequirementsPage() {
             { key: "deadline", label: "Closes" },
             { key: "status", label: "Status", pill: true },
           ]}
-          rows={dashboard.requirements}
+          rows={posts}
+          empty="You haven't posted a requirement yet."
         />
       </Section>
 
@@ -92,8 +95,6 @@ export default async function RequirementsPage() {
           )}
         </Section>
       </div>
-
-      <SampleNote />
     </>
   );
 }

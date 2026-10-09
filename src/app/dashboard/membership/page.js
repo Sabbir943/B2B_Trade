@@ -1,4 +1,3 @@
-import { dashboard } from "@/lib/catalog";
 import { getFoundingSpots, getMemberMembership, getPricingSettings } from "@/lib/membership";
 import {
   formatBdt,
@@ -8,7 +7,7 @@ import {
 } from "@/lib/pricing";
 import { Badge, Button } from "@/components/ui";
 import { CheckIcon, CreditCardIcon } from "@/components/icons";
-import { DataTable, Pill, SampleNote, Section, WorkspaceHeader } from "@/components/workspace";
+import { DataTable, Pill, Section, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 
 export const metadata = { title: "Membership" };
@@ -95,15 +94,13 @@ export default async function MembershipPage() {
 
         <div className="panel p-5">
           <p className="label-xs">Payment method</p>
-          <span className="mt-3 grid h-10 w-14 place-items-center rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-primary">
-            VISA
-          </span>
-          <p className="mt-3 text-sm font-semibold text-ink">•••• 4821</p>
-          <p className="text-[13px] text-slate-500">Expires 08/2028</p>
+          <p className="mt-3 text-sm font-semibold text-ink">No payment method on file</p>
+          <p className="mt-1 text-[13px] text-slate-500">
+            Add a card when you upgrade to a paid plan.
+          </p>
           <div className="mt-4 flex items-start gap-2 rounded-lg bg-surface p-3 text-[12px] leading-5 text-slate-600">
             <CreditCardIcon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            Next charge: {formatUsd(current.priceUsd)} on 01 Oct 2027. Invoices are emailed
-            7 days before renewal.
+            Invoices are emailed 7 days before renewal.
           </div>
         </div>
       </div>
@@ -136,7 +133,8 @@ export default async function MembershipPage() {
             { key: "amount", label: "Amount" },
             { key: "status", label: "Status", pill: true },
           ]}
-          rows={dashboard.invoices}
+          rows={[]}
+          empty="No invoices yet."
         />
       </Section>
 
@@ -201,8 +199,6 @@ export default async function MembershipPage() {
           })}
         </div>
       </Section>
-
-      <SampleNote />
     </>
   );
 }

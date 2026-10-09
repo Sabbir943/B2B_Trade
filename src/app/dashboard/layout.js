@@ -32,7 +32,6 @@ async function DashboardShell({ children }) {
       role={role}
       tier={tier}
       user={{ name: user.name }}
-      notice="Dashboard figures are sample data for this preview build."
     >
       {children}
     </AppShell>

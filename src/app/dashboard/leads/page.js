@@ -1,10 +1,11 @@
-import { dashboard } from "@/lib/catalog";
-import { Badge, Button, ProgressBar } from "@/components/ui";
+import { Badge, Button, EmptyState } from "@/components/ui";
 import { TagIcon } from "@/components/icons";
-import { Pill, SampleNote, Section, WorkspaceHeader } from "@/components/workspace";
+import { Section, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 
 export const metadata = { title: "Matched leads" };
+
+const leads = [];
 
 export default async function LeadsPage() {
   await requirePermission("member.leads");
@@ -26,44 +27,20 @@ export default async function LeadsPage() {
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <Badge tone="navy">{dashboard.leads.length} active matches</Badge>
+        <Badge tone="navy">{leads.length} active matches</Badge>
         <Badge tone="slate">Refreshed hourly</Badge>
-        <Badge tone="amber">2 need a reply today</Badge>
       </div>
 
-      <div className="space-y-3">
-        {dashboard.leads.map((lead) => (
-          <div key={lead.title} className="panel p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3 sm:w-72">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary font-display text-sm font-bold text-white">
-                  {lead.match}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-ink">{lead.title}</p>
-                  <p className="text-[12px] text-slate-500">
-                    {lead.country} · {lead.value}
-                  </p>
-                </div>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <ProgressBar value={lead.match} className="h-2" />
-                <p className="mt-1.5 text-[12px] text-slate-500">
-                  Match driven by category fit, certifications and port proximity
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-3">
-                <Pill>{lead.stage}</Pill>
-                <Button variant="navy" size="sm">
-                  Quote
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <EmptyState
+        icon={<TagIcon className="h-5 w-5" />}
+        title="No matched leads yet"
+        text="Requirements scored against your categories, certifications and trade history will appear here."
+        action={
+          <Button href="/requirements" variant="navy" size="sm">
+            Browse the board
+          </Button>
+        }
+      />
 
       <Section className="mt-6" title="How scoring works">
         <div className="grid gap-4 sm:grid-cols-3">
@@ -82,8 +59,6 @@ export default async function LeadsPage() {
           ))}
         </div>
       </Section>
-
-      <SampleNote />
     </>
   );
 }

@@ -1,5 +1,5 @@
 import SettingsForm from "@/components/settings-form";
-import { SampleNote, WorkspaceHeader } from "@/components/workspace";
+import { WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 
 export const metadata = { title: "Settings" };
@@ -14,8 +14,6 @@ export default async function SettingsPage() {
       />
 
       <SettingsForm />
-
-      <SampleNote />
     </>
   );
 }

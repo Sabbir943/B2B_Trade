@@ -8,29 +8,7 @@ import { RowActions } from "@/components/staff-actions";
 
 export const metadata = { title: "Verification tasks" };
 
-const assignedTasks = [
-  {
-    id: "VT-4102",
-    company: "Delta Jute Works",
-    type: "Company documents",
-    due: "10 Oct 2026",
-    defaultStatus: "In progress",
-  },
-  {
-    id: "VT-4098",
-    company: "Atrium Leather Co.",
-    type: "Factory audit",
-    due: "12 Oct 2026",
-    defaultStatus: "New",
-  },
-  {
-    id: "VT-4095",
-    company: "Sunrise Agro Traders",
-    type: "Bank letter check",
-    due: "08 Oct 2026",
-    defaultStatus: "Completed",
-  },
-];
+const assignedTasks = [];
 
 export default async function VerificationTasksPage() {
   const { user } = await requirePermission("verification.assigned.view");
@@ -88,6 +66,7 @@ export default async function VerificationTasksPage() {
             },
           ]}
           rows={rows}
+          empty="No verification tasks assigned to you yet."
         />
       </Section>
 
@@ -112,10 +91,6 @@ export default async function VerificationTasksPage() {
           </p>
         </Panel>
       </div>
-
-      <p className="mt-4 text-[12px] text-slate-400">
-        Sample task rows scoped to your account; updates are real and audited.
-      </p>
     </>
   );
 }
