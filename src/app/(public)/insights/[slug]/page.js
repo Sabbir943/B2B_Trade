@@ -4,6 +4,8 @@ import { articles } from "@/lib/articles";
 import ProsePage from "@/components/prose-page";
 import { Badge } from "@/components/ui";
 
+export const instant = false;
+
 export function generateStaticParams() {
   return insights.map((article) => ({ slug: article.slug }));
 }

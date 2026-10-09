@@ -161,14 +161,23 @@ export default function SearchResults() {
             </section>
           ) : null}
 
-          {show.suppliers && results.suppliers.length ? (
+          {show.suppliers ? (
             <section>
-              <p className="label-xs">Suppliers ({results.suppliers.length})</p>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                {results.suppliers.map((supplier) => (
-                  <SupplierCard key={supplier.slug} supplier={supplier} />
-                ))}
-              </div>
+              <p className="label-xs">Suppliers</p>
+              {results.suppliers.length ? (
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  {results.suppliers.map((supplier) => (
+                    <SupplierCard key={supplier.slug} supplier={supplier} />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <EmptyState
+                    title="No supplier companies listed yet"
+                    text="Supplier profiles will appear here once real data is provided."
+                  />
+                </div>
+              )}
             </section>
           ) : null}
 

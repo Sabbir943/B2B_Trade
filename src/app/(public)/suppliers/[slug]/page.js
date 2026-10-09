@@ -8,9 +8,7 @@ import { ClockIcon, MapPinIcon, StarIcon } from "@/components/icons";
 
 export const metadata = { title: "Supplier profile" };
 
-export function generateStaticParams() {
-  return suppliers.map((item) => ({ slug: item.slug }));
-}
+export const instant = false;
 
 export default async function SupplierProfilePage({ params }) {
   const { slug } = await params;

@@ -6,6 +6,8 @@ import { ArrowRightIcon, TagIcon } from "@/components/icons";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+export const instant = false;
+
 export function generateStaticParams() {
   return hsCodes.map((item) => ({ code: item.code }));
 }
@@ -32,7 +34,7 @@ export default async function HsCodePage({ params }) {
       <PageHeader
         eyebrow="HS code"
         title={`HS ${entry.code} — ${entry.title}`}
-        description={`${entry.count.toLocaleString()} listings classified under this heading. Start from the tariff line to find suppliers who already ship it.`}
+        description={`Start from the tariff line to find suppliers who already ship goods classified under HS ${entry.code}.`}
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "HS codes", href: "/search?type=products" },
@@ -55,9 +57,6 @@ export default async function HsCodePage({ params }) {
           <Badge tone="navy">
             <TagIcon className="h-3 w-3" /> Heading {entry.code}
           </Badge>
-          <Badge tone="slate">
-            {entry.count.toLocaleString()} classified listings
-          </Badge>
           {relatedCats.map((category) => (
             <Badge key={category.slug} tone="slate">
               {category.name}
@@ -70,7 +69,7 @@ export default async function HsCodePage({ params }) {
             <div>
               <p className="eyebrow-text">Products</p>
               <h2 className="mt-3 font-display text-xl font-bold text-primary">
-                Listing under HS {entry.code}
+                Listings under HS {entry.code}
               </h2>
             </div>
             <Link
@@ -91,7 +90,7 @@ export default async function HsCodePage({ params }) {
             <div className="mt-5">
               <EmptyState
                 icon={<TagIcon className="h-6 w-6" />}
-                title="No sample listings for this heading"
+                title="No listings published for this heading yet"
                 text="Post a requirement and matched suppliers will quote directly."
                 action={
                   <Button href="/rfq" variant="accent" size="sm">
@@ -103,29 +102,36 @@ export default async function HsCodePage({ params }) {
           )}
         </div>
 
-        {matchedSuppliers.length ? (
-          <div className="mt-10">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="eyebrow-text">Suppliers</p>
-                <h2 className="mt-3 font-display text-xl font-bold text-primary">
-                  Companies shipping this heading
-                </h2>
-              </div>
-              <Link
-                href="/suppliers"
-                className="hidden items-center gap-1.5 text-sm font-semibold text-primary hover:underline sm:flex"
-              >
-                All suppliers <ArrowRightIcon className="h-4 w-4" />
-              </Link>
+        <div className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow-text">Suppliers</p>
+              <h2 className="mt-3 font-display text-xl font-bold text-primary">
+                Companies shipping this heading
+              </h2>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {matchedSuppliers.map((supplier) => (
-                <SupplierCard key={supplier.slug} supplier={supplier} />
-              ))}
-            </div>
+            <Link
+              href="/suppliers"
+              className="hidden items-center gap-1.5 text-sm font-semibold text-primary hover:underline sm:flex"
+            >
+              All suppliers <ArrowRightIcon className="h-4 w-4" />
+            </Link>
           </div>
-        ) : null}
+          <div className="mt-5">
+            {matchedSuppliers.length ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {matchedSuppliers.map((supplier) => (
+                  <SupplierCard key={supplier.slug} supplier={supplier} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No supplier companies listed yet"
+                text="Supplier profiles shipping this heading will appear here once verified data is provided."
+              />
+            )}
+          </div>
+        </div>
       </section>
     </>
   );

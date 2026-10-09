@@ -1,23 +1,17 @@
 import Link from "next/link";
-import Image from "next/image";
-import {
-  categories,
-  insights,
-  requirements,
-  siteStats,
-  suppliers,
-} from "@/lib/catalog";
+import { categories, insights, requirements, siteStats } from "@/lib/catalog";
 import { shell } from "./shell";
-import { Badge, Button, SectionTitle } from "./ui";
-import { SupplierCard } from "./cards";
+import { Badge, Button, EmptyState, SectionTitle } from "./ui";
 import {
   ArrowRightIcon,
   BoxIcon,
   CheckIcon,
   ClipboardIcon,
+  InboxIcon,
   SearchIcon,
   ShieldIcon,
   StarIcon,
+  UsersIcon,
 } from "./icons";
 
 const featuredSlugs = [
@@ -29,32 +23,21 @@ const featuredSlugs = [
   "textile-garment-accessories",
 ];
 
-const featuredImages = {
-  spices: "/cat-spices.webp",
-  chemicals: "/cat-chemicals.webp",
-  "construction-raw-materials": "/cat-construction.webp",
-  "feed-ingredients": "/cat-feed.webp",
-  "agro-products": "/cat-agro.webp",
-  "textile-garment-accessories": "/cat-textile.webp",
-};
-
 export function TrustStrip() {
   if (!siteStats.enabled) return null;
   return (
     <section className="border-b border-slate-200/70 bg-white">
       <div className={`py-6 ${shell}`}>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          {siteStats.items.map((item) => (
-            <div key={item.label} className="text-center sm:text-left">
-              <p className="font-display text-2xl font-bold tracking-tight text-primary sm:text-[28px]">
-                {item.value}
-              </p>
-              <p className="mt-0.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {item.label}
-              </p>
-            </div>
+        <ul className="grid gap-2 sm:grid-cols-3 sm:gap-6">
+          {siteStats.lines.map((line) => (
+            <li
+              key={line}
+              className="text-center text-[14px] font-semibold leading-6 text-ink sm:text-left"
+            >
+              {line}
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );
@@ -85,28 +68,15 @@ export function FeaturedCategories() {
               href={`/categories/${category.slug}`}
               className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="relative h-40 overflow-hidden sm:h-44">
-                <Image
-                  src={featuredImages[category.slug]}
-                  alt={category.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-primary/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-                  <span className="font-display text-base font-bold leading-tight text-white">
-                    {category.name}
-                  </span>
-                  <span className="rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white ring-1 ring-white/25">
-                    HS {category.hs}
-                  </span>
-                </div>
+              <div className="grid-map relative flex h-40 items-end justify-between gap-3 rounded-t-2xl bg-gradient-to-br from-primary via-[#153050] to-[#1e4168] p-4 sm:h-44">
+                <span className="font-display text-base font-bold leading-tight text-white">
+                  {category.name}
+                </span>
+                <span className="rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white ring-1 ring-white/25">
+                  HS {category.hs}
+                </span>
               </div>
-              <div className="flex items-center justify-between gap-3 px-4 py-3">
-                <p className="text-[13px] text-slate-600">
-                  {category.count.toLocaleString()} listings
-                </p>
+              <div className="flex items-center justify-end gap-3 px-4 py-3">
                 <span className="flex items-center gap-1.5 text-[13px] font-semibold text-primary">
                   Browse
                   <ArrowRightIcon className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
@@ -127,7 +97,7 @@ export function LiveRequirements() {
     <section className="bg-white">
       <div className={`py-12 sm:py-16 ${shell}`}>
         <SectionTitle
-          eyebrow="Buyers are quoting now"
+          eyebrow="Demand board"
           title="Latest buy requirements"
           action={
             <Button href="/requirements" variant="soft" size="sm">
@@ -136,62 +106,75 @@ export function LiveRequirements() {
           }
         />
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-          <div className="hidden gap-4 border-b border-slate-200 bg-surface px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 md:grid md:grid-cols-[90px_1fr_130px_150px_120px_28px]">
-            <span>HS code</span>
-            <span>Requirement</span>
-            <span>Quantity</span>
-            <span>Destination</span>
-            <span>Posted</span>
-            <span className="sr-only">Open</span>
-          </div>
+        {open.length ? (
+          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+            <div className="hidden gap-4 border-b border-slate-200 bg-surface px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 md:grid md:grid-cols-[90px_1fr_130px_150px_120px_28px]">
+              <span>HS code</span>
+              <span>Requirement</span>
+              <span>Quantity</span>
+              <span>Destination</span>
+              <span>Posted</span>
+              <span className="sr-only">Open</span>
+            </div>
 
-          <ul className="divide-y divide-slate-100">
-            {open.map((item) => {
-              const hs = categories.find(
-                (category) => category.slug === item.category,
-              )?.hs;
-              return (
-                <li key={item.id}>
-                  <Link
-                    href={`/requirements/${item.id}-${item.slug}`}
-                    className="group grid gap-2 px-5 py-4 transition hover:bg-surface md:grid-cols-[90px_1fr_130px_150px_120px_28px] md:items-center md:gap-4"
-                  >
-                    <span className="font-mono text-[13px] font-bold text-primary">
-                      {hs}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-ink group-hover:text-primary">
-                        {item.title}
+            <ul className="divide-y divide-slate-100">
+              {open.map((item) => {
+                const hs = categories.find(
+                  (category) => category.slug === item.category,
+                )?.hs;
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={`/requirements/${item.id}-${item.slug}`}
+                      className="group grid gap-2 px-5 py-4 transition hover:bg-surface md:grid-cols-[90px_1fr_130px_150px_120px_28px] md:items-center md:gap-4"
+                    >
+                      <span className="font-mono text-[13px] font-bold text-primary">
+                        {hs}
                       </span>
-                      <span className="mt-0.5 block text-[12px] text-slate-500">
-                        {item.buyer} · {item.status}
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-ink group-hover:text-primary">
+                          {item.title}
+                        </span>
+                        <span className="mt-0.5 block text-[12px] text-slate-500">
+                          {item.buyer} · {item.status}
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-[13px] font-semibold text-ink">
-                      {item.qty}
-                    </span>
-                    <span className="text-[13px] text-slate-600">
-                      {item.country}
-                    </span>
-                    <span className="text-[13px] text-slate-500">
-                      {item.posted}
-                    </span>
-                    <ArrowRightIcon className="hidden h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-primary md:block" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+                      <span className="text-[13px] font-semibold text-ink">
+                        {item.qty}
+                      </span>
+                      <span className="text-[13px] text-slate-600">
+                        {item.country}
+                      </span>
+                      <span className="text-[13px] text-slate-500">
+                        {item.posted}
+                      </span>
+                      <ArrowRightIcon className="hidden h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-primary md:block" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <EmptyState
+              icon={<InboxIcon className="h-5 w-5" />}
+              title="No buy requirements published yet"
+              text="Buyer requests for this board will appear here as soon as they are posted."
+              action={
+                <Button href="/rfq" variant="accent" size="sm">
+                  Post a requirement
+                </Button>
+              }
+            />
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
 export function VerifiedSuppliers() {
-  const top = suppliers.slice(0, 3);
-
   return (
     <section className="bg-surface">
       <div className={`py-12 sm:py-16 ${shell}`}>
@@ -205,10 +188,12 @@ export function VerifiedSuppliers() {
           }
         />
 
-        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {top.map((supplier) => (
-            <SupplierCard key={supplier.slug} supplier={supplier} />
-          ))}
+        <div className="mt-7">
+          <EmptyState
+            icon={<UsersIcon className="h-5 w-5" />}
+            title="Supplier profiles are not published yet"
+            text="Company names, logos and customer stories will appear here as soon as real supplier data is connected."
+          />
         </div>
       </div>
     </section>

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { categories, products, suppliers } from "@/lib/catalog";
 import { shell } from "@/components/shell";
 import {
-  Badge,
   Button,
   EmptyState,
   PageHeader,
@@ -12,6 +11,8 @@ import {
 import { ProductCard, SupplierCard } from "@/components/cards";
 
 export const metadata = { title: "Category" };
+
+export const instant = false;
 
 export function generateStaticParams() {
   return categories.map((item) => ({ slug: item.slug }));
@@ -33,7 +34,7 @@ export default async function CategoryPage({ params }) {
   return (
     <>
       <PageHeader
-        eyebrow={`HS ${category.hs} · ${category.count.toLocaleString()} listings`}
+        eyebrow={`HS ${category.hs}`}
         title={category.name}
         description={category.blurb}
         breadcrumbs={[
@@ -102,14 +103,11 @@ export default async function CategoryPage({ params }) {
               </Select>
             </label>
           </div>
-          <Badge tone="navy" className="self-start lg:mb-2.5">
-            {items.length * 214 + category.count} results
-          </Badge>
         </div>
 
         <div className="mt-8">
           <SectionTitle
-            eyebrow="Listing sample"
+            eyebrow="Listings"
             title={`Products in ${category.name}`}
             action={
               <Button href="/search" variant="soft" size="sm">
@@ -138,16 +136,23 @@ export default async function CategoryPage({ params }) {
           )}
         </div>
 
-        {categorySuppliers.length ? (
-          <div className="mt-10">
-            <SectionTitle eyebrow="Who supplies this" title="Suppliers in this category" />
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {categorySuppliers.map((supplier) => (
-                <SupplierCard key={supplier.slug} supplier={supplier} />
-              ))}
-            </div>
+        <div className="mt-10">
+          <SectionTitle eyebrow="Who supplies this" title="Suppliers in this category" />
+          <div className="mt-5">
+            {categorySuppliers.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {categorySuppliers.map((supplier) => (
+                  <SupplierCard key={supplier.slug} supplier={supplier} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No supplier companies listed yet"
+                text="Supplier profiles for this category will appear here once verified data is provided."
+              />
+            )}
           </div>
-        ) : null}
+        </div>
 
         <div className="mt-10">
           <SectionTitle eyebrow="Keep browsing" title="Related categories" />

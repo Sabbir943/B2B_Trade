@@ -1,8 +1,15 @@
-import { categories, suppliers } from "@/lib/catalog";
+import { categories } from "@/lib/catalog";
 import { shell } from "@/components/shell";
-import { Badge, Button, Field, Input, PageHeader, Select } from "@/components/ui";
-import { SupplierCard } from "@/components/cards";
-import { FilterIcon } from "@/components/icons";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+} from "@/components/ui";
+import { FilterIcon, UsersIcon } from "@/components/icons";
 
 export const metadata = { title: "Find suppliers" };
 
@@ -66,7 +73,7 @@ export default function SuppliersPage() {
                 Apply filters
               </Button>
               <p className="text-center text-[12px] text-slate-500">
-                {suppliers.length} suppliers match your market
+                Supplier profiles are not published yet
               </p>
             </div>
           </aside>
@@ -86,11 +93,16 @@ export default function SuppliersPage() {
               </Select>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {suppliers.map((supplier) => (
-                <SupplierCard key={supplier.slug} supplier={supplier} />
-              ))}
-            </div>
+            <EmptyState
+              icon={<UsersIcon className="h-5 w-5" />}
+              title="No supplier companies listed yet"
+              text="Supplier names, logos and profiles will be listed here once verified data is provided."
+              action={
+                <Button href="/rfq" variant="accent" size="sm">
+                  Post a requirement
+                </Button>
+              }
+            />
           </div>
         </div>
       </section>

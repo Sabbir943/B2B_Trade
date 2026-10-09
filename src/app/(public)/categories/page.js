@@ -12,7 +12,7 @@ export default function CategoriesPage() {
       <PageHeader
         eyebrow="Catalogue"
         title="All categories"
-        description="Twelve trading categories with live listings, supplier counts and HS-code cross references — built for buyers who know exactly what they need."
+        description="Twelve trading categories with sub-category breakdowns and HS-code cross references — built for buyers who know exactly what they need."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Categories" }]}
         actions={
           <>
@@ -47,7 +47,6 @@ export default function CategoriesPage() {
                 {category.blurb}
               </p>
               <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
-                <Badge tone="navy">{category.count.toLocaleString()} listings</Badge>
                 {category.sub.slice(0, 2).map((sub) => (
                   <Badge key={sub} tone="slate">
                     {sub}
@@ -78,7 +77,7 @@ export default function CategoriesPage() {
               <Link
                 key={item.code}
                 href={`/hs/${item.code}`}
-                className="panel-flat flex items-center justify-between gap-3 px-4 py-3 transition hover:border-primary/40 hover:bg-slate-50"
+                className="panel-flat group flex items-center justify-between gap-3 px-4 py-3 transition hover:border-primary/40 hover:bg-slate-50"
               >
                 <span>
                   <span className="block font-display text-sm font-bold text-primary">
@@ -88,9 +87,7 @@ export default function CategoriesPage() {
                     {item.title}
                   </span>
                 </span>
-                <span className="text-[12px] font-semibold text-slate-500">
-                  {item.count}
-                </span>
+                <ArrowRightIcon className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-secondary" />
               </Link>
             ))}
           </div>

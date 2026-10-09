@@ -12,12 +12,6 @@ const perks = [
   "No cost for buyers at any membership level",
 ];
 
-const stats = [
-  ["Median first response", "6 hours"],
-  ["Average quotes per post", "7"],
-  ["Suppliers alerted", "Matched by HS code"],
-];
-
 export default function RfqPage() {
   return (
     <>
@@ -52,22 +46,6 @@ export default function RfqPage() {
               </ul>
             </div>
 
-            <div className="panel bg-surface p-5">
-              <p className="label-xs">Board averages</p>
-              <dl className="mt-3 space-y-3">
-                {stats.map(([label, value]) => (
-                  <div key={label} className="flex items-baseline justify-between gap-3">
-                    <dt className="text-[13px] text-slate-600">{label}</dt>
-                    <dd className="font-display text-sm font-bold text-primary">
-                      {value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-3 text-[12px] text-slate-500">
-                Sample figures for demonstration.
-              </p>
-            </div>
           </aside>
         </div>
       </section>

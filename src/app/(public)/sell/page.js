@@ -1,8 +1,7 @@
-import { siteStats } from "@/lib/catalog";
 import { getPricingSettings } from "@/lib/membership";
 import { tierHighlights, tierPriceLines } from "@/lib/pricing";
 import { shell } from "@/components/shell";
-import { Badge, Button, PageHeader, SectionTitle, Stat } from "@/components/ui";
+import { Badge, Button, PageHeader, SectionTitle } from "@/components/ui";
 import { ArrowRightIcon, CheckIcon, ShieldIcon } from "@/components/icons";
 
 export const metadata = { title: "Sell on AlliedOne" };
@@ -57,13 +56,6 @@ export default async function SellPage() {
 
       <section className={`py-8 sm:py-10 ${shell}`}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Verified members" value={siteStats.items[0].value} hint="Sample platform figure" />
-          <Stat label="Countries trading" value={siteStats.items[1].value} hint="Buyer markets reached" />
-          <Stat label="Categories" value={siteStats.items[2].value} hint="Export verticals covered" />
-          <Stat label="Listings live" value={siteStats.items[3].value} hint="Products currently listed" />
-        </div>
-
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {benefits.map((benefit) => (
             <div key={benefit.title} className="panel p-5">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary/10 text-secondary">

@@ -1,6 +1,5 @@
-import { siteStats } from "@/lib/catalog";
 import { shell } from "@/components/shell";
-import { Button, PageHeader, SectionTitle, Stat } from "@/components/ui";
+import { Button, PageHeader, SectionTitle } from "@/components/ui";
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
 
 export const metadata = { title: "About Us" };
@@ -27,7 +26,7 @@ const values = [
 const timeline = [
   { year: "2021", text: "Founded in Dhaka as a directory for export-ready manufacturers." },
   { year: "2023", text: "Verification programme launched with document-level checks." },
-  { year: "2025", text: "Sourcing Desk opens; buy requirements board crosses 5,000 posts." },
+  { year: "2025", text: "Sourcing Desk opens; the buy requirements board goes live." },
   { year: "2026", text: "Market Entry engagements and HS-coded search roll out." },
 ];
 
@@ -52,18 +51,7 @@ export default function AboutPage() {
       />
 
       <section className={`py-8 sm:py-10 ${shell}`}>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {siteStats.items.map((item) => (
-            <Stat
-              key={item.label}
-              label={item.label}
-              value={item.value}
-              hint="Sample platform figure"
-            />
-          ))}
-        </div>
-
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className="panel p-6 sm:p-8">
             <p className="label-xs">The story</p>
             <p className="mt-3 text-[15px] leading-7 text-ink">
@@ -79,9 +67,8 @@ export default function AboutPage() {
               should not be automated.
             </p>
             <p className="mt-3 text-[15px] leading-7 text-ink">
-              Today the marketplace connects verified suppliers across twelve
-              export categories with buyers in more than sixty markets — and
-              the paperwork that makes those trades actually clear customs.
+              Today the marketplace covers twelve export categories — with the
+              paperwork that makes those trades actually clear customs.
             </p>
           </div>
 

@@ -9,9 +9,7 @@ import { StarIcon } from "@/components/icons";
 
 export const metadata = { title: "Product" };
 
-export function generateStaticParams() {
-  return products.map((item) => ({ slug: item.slug }));
-}
+export const instant = false;
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
@@ -138,7 +136,17 @@ export default async function ProductPage({ params }) {
                   </span>
                 </span>
               </Link>
-            ) : null}
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-3">
+                <p className="text-[13px] font-semibold text-ink">
+                  Supplier profile not published yet
+                </p>
+                <p className="mt-0.5 text-[12px] leading-5 text-slate-500">
+                  The company behind this listing will be shown here once real
+                  supplier data is connected.
+                </p>
+              </div>
+            )}
 
             <div className="mt-4">
               <InquiryForm subject={product.name} compact />

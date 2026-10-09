@@ -1,5 +1,5 @@
 import { dashboard, requirements as board } from "@/lib/catalog";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, EmptyState } from "@/components/ui";
 import { ClipboardIcon } from "@/components/icons";
 import { DataTable, SampleNote, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import Link from "next/link";
@@ -56,33 +56,40 @@ export default async function RequirementsPage() {
             </Link>
           }
         >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {board.slice(0, 3).map((item) => (
-              <div key={item.id} className="panel flex flex-col p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge tone="navy">{item.country}</Badge>
-                  <span className="text-[12px] text-slate-500">{item.posted}</span>
+          {board.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {board.slice(0, 3).map((item) => (
+                <div key={item.id} className="panel flex flex-col p-5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge tone="navy">{item.country}</Badge>
+                    <span className="text-[12px] text-slate-500">{item.posted}</span>
+                  </div>
+                  <p className="mt-3 font-display text-sm font-bold text-primary">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-[13px] text-slate-600">
+                    {item.qty} · {item.budget}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between pt-4">
+                    <span className="text-[12px] text-slate-500">
+                      Closes {item.deadline}
+                    </span>
+                    <Link
+                      href={`/requirements/${item.id}-${item.slug}`}
+                      className="text-[13px] font-semibold text-primary hover:underline"
+                    >
+                      View
+                    </Link>
+                  </div>
                 </div>
-                <p className="mt-3 font-display text-sm font-bold text-primary">
-                  {item.title}
-                </p>
-                <p className="mt-1 text-[13px] text-slate-600">
-                  {item.qty} · {item.budget}
-                </p>
-                <div className="mt-auto flex items-center justify-between pt-4">
-                  <span className="text-[12px] text-slate-500">
-                    Closes {item.deadline}
-                  </span>
-                  <Link
-                    href={`/requirements/${item.id}-${item.slug}`}
-                    className="text-[13px] font-semibold text-primary hover:underline"
-                  >
-                    View
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No open requirements on the board"
+              text="Public buyer posts will appear here as soon as they are published."
+            />
+          )}
         </Section>
       </div>
 

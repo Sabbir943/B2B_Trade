@@ -7,9 +7,7 @@ import { AlertIcon, ClockIcon, ShieldIcon } from "@/components/icons";
 
 export const metadata = { title: "Requirement" };
 
-export function generateStaticParams() {
-  return requirements.map((item) => ({ slug: `${item.id}-${item.slug}` }));
-}
+export const instant = false;
 
 export default async function RequirementDetailPage({ params }) {
   const { slug } = await params;
@@ -78,10 +76,10 @@ export default async function RequirementDetailPage({ params }) {
           <Panel>
             <p className="label-xs">Buyer notes</p>
             <p className="mt-2 text-sm leading-7 text-slate-600">
-              {item.desc} Quotes should include unit pricing, packing details,
-              lead time from the loading port and sample availability. Certified
-              suppliers with shipment history in this category will be reviewed
-              first.
+              {item.desc ? `${item.desc} ` : null}Quotes should include unit
+              pricing, packing details, lead time from the loading port and
+              sample availability. Certified suppliers with shipment history in
+              this category will be reviewed first.
             </p>
           </Panel>
 
@@ -124,14 +122,16 @@ export default async function RequirementDetailPage({ params }) {
         </div>
       </div>
 
-      <div className="mt-10">
-        <SectionTitle eyebrow="More demand" title="Related requirements" />
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {related.map((entry) => (
-            <RequirementCard key={entry.id} item={entry} />
-          ))}
+      {related.length ? (
+        <div className="mt-10">
+          <SectionTitle eyebrow="More demand" title="Related requirements" />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((entry) => (
+              <RequirementCard key={entry.id} item={entry} />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }
