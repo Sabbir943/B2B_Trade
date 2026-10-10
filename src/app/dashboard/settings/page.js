@@ -2,6 +2,8 @@ import SettingsForm from "@/components/settings-form";
 import { WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 
+export const instant = false;
+
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {

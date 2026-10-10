@@ -1,52 +1,69 @@
-import { admin } from "@/lib/catalog";
-import { Badge, Button } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { ShieldIcon } from "@/components/icons";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
-import { ROLE_MATRIX } from "@/lib/permissions";
+import { ROLE_MATRIX, ROLE_LABELS, ROLES } from "@/lib/permissions";
+import { countUsersByRole, listUsers } from "@/lib/users";
 import RoleAssignForm from "@/components/role-assign-form";
+
+export const instant = false;
 
 export const metadata = { title: "Roles & access" };
 
+const STAFF_ROLE_KEYS = [
+  ROLES.STAFF_VERIFIER,
+  ROLES.STAFF_SUPPORT,
+  ROLES.STAFF_CONTENT,
+  ROLES.STAFF_SALES,
+  ROLES.SUPER_ADMIN,
+];
+
+const SCOPES = Object.fromEntries(ROLE_MATRIX);
+
 export default async function AdminRolesPage() {
   await requirePermission("admin.roles");
+  const [roleCounts, users] = await Promise.all([countUsersByRole(), listUsers()]);
+
+  const staffTotal = STAFF_ROLE_KEYS.reduce((sum, key) => sum + (roleCounts.get(key) || 0), 0);
+  const superAdmins = users.filter((user) => user.role === ROLES.SUPER_ADMIN);
+
   const stats = [
-    { label: "Staff accounts", value: "32", hint: "Across 5 roles" },
-    { label: "MFA coverage", value: "84%", hint: "Target 100%" },
-    { label: "Pending invites", value: "3", hint: "Expire in 5 days" },
-    { label: "Access reviews", value: "2", hint: "Due this month" },
+    { label: "Staff accounts", value: String(staffTotal), hint: "Holding any staff role" },
+    { label: "Super Admin", value: String(roleCounts.get(ROLES.SUPER_ADMIN) || 0), hint: "Exactly one allowed" },
+    { label: "Company members", value: String(roleCounts.get(ROLES.COMPANY_MEMBER) || 0), hint: "Default role" },
+    { label: "Verification partners", value: String(roleCounts.get(ROLES.VERIFICATION_PARTNER) || 0), hint: "Task-scoped access" },
   ];
 
-  const permissions = ROLE_MATRIX;
+  const rows = STAFF_ROLE_KEYS.map((key) => ({
+    id: key,
+    role: ROLE_LABELS[key],
+    members: String(roleCounts.get(key) || 0),
+    scope: SCOPES[key] || "—",
+    holders:
+      users
+        .filter((user) => user.role === key)
+        .map((user) => user.email)
+        .join(", ") || "—",
+  }));
 
   return (
     <>
       <WorkspaceHeader
         title="Roles & access"
-        description="Staff permissions with least-privilege defaults. Sensitive roles require MFA and quarterly access review."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              Access review
-            </Button>
-            <Button variant="navy" size="sm">
-              Invite staff
-            </Button>
-          </>
-        }
+        description="Staff permissions with least-privilege defaults. Counts below are live accounts in the user collection."
       />
 
       <StatCards items={stats} />
 
-      <Section className="mt-6" title="Roles">
+      <Section className="mt-6" title="Staff roles">
         <DataTable
           columns={[
             { key: "role", label: "Role", emphasis: true },
-            { key: "members", label: "Staff" },
+            { key: "members", label: "Accounts" },
             { key: "scope", label: "Scope" },
-            { key: "mfa", label: "MFA", pill: true },
+            { key: "holders", label: "Holders" },
           ]}
-          rows={admin.roles}
+          rows={rows}
         />
       </Section>
 
@@ -56,8 +73,11 @@ export default async function AdminRolesPage() {
             <ShieldIcon className="h-4 w-4 text-secondary" />
             Permission matrix
           </p>
+          <p className="mt-1 text-[13px] text-slate-500">
+            Mirrors the enforced server rules in src/lib/permissions.js.
+          </p>
           <div className="mt-4 space-y-3">
-            {permissions.map(([role, scope]) => (
+            {ROLE_MATRIX.map(([role, scope]) => (
               <div
                 key={role}
                 className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:gap-4"
@@ -73,28 +93,22 @@ export default async function AdminRolesPage() {
 
         <div className="space-y-4">
           <div className="panel p-5">
-            <p className="label-xs">Security posture</p>
-            <ul className="mt-3 space-y-2.5 text-[13px] leading-6 text-slate-600">
-              <li className="flex justify-between gap-3">
-                <span>MFA on privileged roles</span>
-                <span className="font-semibold text-success">Enforced</span>
-              </li>
-              <li className="flex justify-between gap-3">
-                <span>Session length (staff)</span>
-                <span className="font-semibold text-ink">8 hours</span>
-              </li>
-              <li className="flex justify-between gap-3">
-                <span>IP allowlist (console)</span>
-                <span className="font-semibold text-amber-600">Partial</span>
-              </li>
-              <li className="flex justify-between gap-3">
-                <span>Last access review</span>
-                <span className="font-semibold text-ink">12 Sep 2026</span>
-              </li>
-            </ul>
-            <Button variant="navy" size="sm" className="mt-4 w-full">
-              Complete IP allowlist
-            </Button>
+            <p className="label-xs">Super Admin</p>
+            {superAdmins.length ? (
+              <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
+                {superAdmins.map((user) => (
+                  <li key={user.email} className="flex items-center justify-between gap-3">
+                    <span className="truncate font-semibold text-ink">{user.email}</span>
+                    <Badge tone="green">active</Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[13px] leading-6 text-slate-600">
+                No Super Admin provisioned yet — assign one here or with{" "}
+                <span className="font-mono text-[12px]">scripts/set-role.mjs</span>.
+              </p>
+            )}
           </div>
 
           <div className="panel p-5">
@@ -110,12 +124,6 @@ export default async function AdminRolesPage() {
           </div>
         </div>
       </div>
-
-      <p className="mt-4 text-[12px] text-slate-400">
-        Permission matrix mirrors the enforced server rules in{" "}
-        <span className="font-semibold">src/lib/permissions.js</span>; staff
-        counts shown are sample figures.
-      </p>
     </>
   );
 }

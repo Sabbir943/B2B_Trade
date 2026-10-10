@@ -1,57 +1,84 @@
-import { admin } from "@/lib/catalog";
 import { getPricingSettings } from "@/lib/membership";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, EmptyState } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
+import { listUsers } from "@/lib/users";
+import { getProfiles } from "@/lib/profile";
+import { formatDate } from "@/lib/refs";
 import TrialGrantForm from "@/components/trial-grant-form";
+import { ROLE_LABELS } from "@/lib/permissions";
+
+export const instant = false;
 
 export const metadata = { title: "Members" };
 
+const PAID_TIERS = new Set(["silver", "gold", "platinum"]);
+
 export default async function AdminMembersPage() {
   await requirePermission("admin.members");
-  const settings = await getPricingSettings();
+  const [settings, users] = await Promise.all([getPricingSettings(), listUsers()]);
+
+  const emails = users.map((user) => user.email);
+  const profiles = await getProfiles(emails);
+  const profileMap = profiles instanceof Map ? profiles : new Map();
+
+  const verified = users.filter((user) => user.emailVerified).length;
+  const paid = users.filter((user) => PAID_TIERS.has(user.tier)).length;
+  const staff = users.filter((user) =>
+    ["staff_verifier", "staff_support", "staff_content", "staff_sales", "super_admin"].includes(
+      user.role,
+    ),
+  ).length;
 
   const stats = [
-    { label: "Total members", value: "1,284", hint: "+312 in 30 days" },
-    { label: "Active", value: "1,201", hint: "93.5% of base" },
-    { label: "Pending", value: "48", hint: "Awaiting approval" },
-    { label: "Suspended", value: "35", hint: "Review each quarter" },
+    { label: "Total accounts", value: String(users.length), hint: "Auth user collection" },
+    { label: "Email verified", value: String(verified), hint: `${users.length - verified} unverified` },
+    { label: "Paid tiers", value: String(paid), hint: "Silver / Gold / Platinum" },
+    { label: "Staff accounts", value: String(staff), hint: "Across admin + console" },
   ];
+
+  const rows = users.map((user) => ({
+    id: user.email,
+    company: profileMap.get(user.email)?.legalName || user.name || "—",
+    plan: user.tier || "free",
+    role: ROLE_LABELS[user.role] || user.role || "Company Member",
+    country: profileMap.get(user.email)?.country || "—",
+    joined: formatDate(user.createdAt),
+    status: user.emailVerified ? "active" : "pending",
+  }));
 
   return (
     <>
       <WorkspaceHeader
         title="Members"
-        description="Every company on the platform — plan, country and lifecycle status. Suspension always requires a reason."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              Export CSV
-            </Button>
-            <Button variant="navy" size="sm">
-              Invite member
-            </Button>
-          </>
-        }
+        description="Every account on the platform — plan, role and lifecycle status. Suspension always requires a reason."
       />
 
       <StatCards items={stats} />
 
-      <Section className="mt-6" title="Member directory">
-        <DataTable
-          columns={[
-            { key: "id", label: "Member ID", emphasis: true },
-            { key: "company", label: "Company" },
-            { key: "plan", label: "Plan" },
-            { key: "country", label: "Country" },
-            { key: "joined", label: "Joined" },
-            { key: "status", label: "Status", pill: true },
-          ]}
-          rows={admin.members}
-        />
+      <Section className="mt-6" title="Account directory">
+        {rows.length ? (
+          <DataTable
+            columns={[
+              { key: "id", label: "Email", emphasis: true },
+              { key: "company", label: "Company" },
+              { key: "plan", label: "Plan" },
+              { key: "role", label: "Role" },
+              { key: "country", label: "Country" },
+              { key: "joined", label: "Joined" },
+              { key: "status", label: "Status", pill: true },
+            ]}
+            rows={rows}
+          />
+        ) : (
+          <EmptyState
+            title="No accounts yet"
+            text="Accounts appear here the moment members sign up."
+          />
+        )}
       </Section>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="panel p-5">
           <p className="font-display text-base font-bold text-primary">Silver trials</p>
           <p className="mt-1 text-[13px] leading-6 text-slate-600">
@@ -66,24 +93,18 @@ export default async function AdminMembersPage() {
             />
           </div>
         </div>
-        {[
-          ["Approve pending", "48 companies waiting on document checks."],
-          ["Review suspensions", "35 accounts flagged for quarterly review."],
-        ].map(([title, text]) => (
-          <div key={title} className="panel p-5">
-            <p className="font-display text-base font-bold text-primary">{title}</p>
-            <p className="mt-1 text-[13px] leading-6 text-slate-600">{text}</p>
-            <Button variant="outline" size="sm" className="mt-3">
-              Open
-            </Button>
-          </div>
-        ))}
-      </div>
 
-      <p className="mt-4 text-[12px] text-slate-400">
-        Member directory rows are sample data — trial grants run against the real account
-        database.
-      </p>
+        <div className="panel p-5">
+          <p className="font-display text-base font-bold text-primary">Role changes</p>
+          <p className="mt-1 text-[13px] leading-6 text-slate-600">
+            Staff roles are assigned from Roles &amp; access — every change writes an
+            immutable audit entry. Only one Super Admin can exist at a time.
+          </p>
+          <Button href="/admin/roles" variant="outline" size="sm" className="mt-3">
+            Open roles
+          </Button>
+        </div>
+      </div>
     </>
   );
 }

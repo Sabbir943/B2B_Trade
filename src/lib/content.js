@@ -65,7 +65,7 @@ export const legalDocs = {
       },
       {
         h2: "5. Retention and rights",
-        p: "Records are retained for the life of the account and for seven years afterwards where trade records require it. You may request access, correction or deletion by contacting privacy@alliedone.example.",
+        p: "Records are retained for the life of the account and for seven years afterwards where trade records require it. You may request access, correction or deletion through the contact page.",
       },
       {
         h2: "6. Cookies",

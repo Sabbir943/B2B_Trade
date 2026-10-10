@@ -341,3 +341,6 @@ export async function verifyOtp({ email, code }) {
   await db.collection(OTPS).deleteMany({ email: address });
   return { ok: true };
 }
+
+/* Shared with the phone OTP service so both channels hash codes alike. */
+export { hashCode as hashOtpCode, matchesCode as matchesOtpCode };

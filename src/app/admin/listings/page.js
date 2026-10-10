@@ -1,125 +1,108 @@
-import { admin } from "@/lib/catalog";
-import { Button } from "@/components/ui";
-import { AlertIcon } from "@/components/icons";
+import { ModerationRow } from "@/components/moderation-actions";
+import { Badge } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
-import { getStaffStatuses } from "@/lib/audit";
+import { getAllListings, LISTING_STATUS } from "@/lib/listings";
 import { moderateListing } from "@/lib/actions";
-import { RowActions } from "@/components/staff-actions";
+import { categoriesById } from "@/lib/catalog";
+import { plain, formatDate } from "@/lib/refs";
+
+export const instant = false;
 
 export const metadata = { title: "Listings moderation" };
 
+const STATUS_TONE = { approved: "green", pending: "amber", rejected: "red", draft: "slate" };
+
+/**
+ * §7.2.2 listing moderation — real rows from the `listings` collection.
+ * Approvals are instant; removals demand a written reason the seller sees.
+ */
 export default async function AdminListingsPage() {
   await requirePermission("admin.listings");
-  const statuses = await getStaffStatuses("listing");
-  const rows = admin.listings.map((item) => ({
-    ...item,
-    status: statuses[item.id]?.status ?? item.status,
-  }));
-  const stats = [
-    { label: "Under review", value: "18", hint: "2 reported today" },
-    { label: "Moderated (30d)", value: "1,948", hint: "96% within SLA" },
-    { label: "Approved", value: "1,901", hint: "97.6% approval rate" },
-    { label: "Removed", value: "47", hint: "Price claims dominate" },
-  ];
 
-  const reasons = [
-    ["Price claim", "Unsupported unit pricing", "18"],
-    ["Image rights", "Stock or competitor images", "12"],
-    ["Duplicate", "Same SKU listed twice", "9"],
-    ["Restricted", "Prohibited or unlicensed goods", "3"],
+  const all = await getAllListings({ limit: 200 });
+  const pending = all.filter((row) => row.status === LISTING_STATUS.PENDING);
+  const rows = [...pending, ...all.filter((row) => row.status !== LISTING_STATUS.PENDING)];
+
+  const stats = [
+    { label: "Awaiting review", value: String(pending.length), hint: "12h SLA" },
+    { label: "Approved", value: String(all.filter((row) => row.status === LISTING_STATUS.APPROVED).length), hint: "Public catalogue" },
+    { label: "Rejected", value: String(all.filter((row) => row.status === LISTING_STATUS.REJECTED).length), hint: "Reason sent to seller" },
+    { label: "Total tracked", value: String(all.length), hint: "All statuses" },
   ];
 
   return (
     <>
       <WorkspaceHeader
         title="Listing moderation"
-        description="Reported products with their flags. Approvals are instant; removals notify the seller with the reason."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              Bulk approve
-            </Button>
-            <Button variant="navy" size="sm">
-              Next report
-            </Button>
-          </>
-        }
+        description="Pending listings first. Approvals publish instantly; removals require a reason the seller sees on their row."
+        actions={<Badge tone="amber">{pending.length} in queue</Badge>}
       />
 
       <StatCards items={stats} />
 
-      <Section className="mt-6" title="Reported listings">
+      <Section className="mt-6" title="Listings">
         <DataTable
           columns={[
             { key: "id", label: "Listing", emphasis: true },
-            { key: "product", label: "Product" },
-            { key: "seller", label: "Seller" },
-            { key: "flag", label: "Flag" },
-            { key: "reported", label: "Reported" },
-            { key: "status", label: "Status", pill: true },
+            {
+              key: "title",
+              label: "Product",
+              render: (row) => (
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-ink">{row.title}</span>
+                  {row.rejectionReason ? (
+                    <span className="text-[12px] font-normal text-red-600">{row.rejectionReason}</span>
+                  ) : null}
+                </span>
+              ),
+            },
+            { key: "email", label: "Seller" },
+            {
+              key: "category",
+              label: "Category",
+              render: (row) => categoriesById[row.category]?.name || row.category,
+            },
+            { key: "createdAt", label: "Submitted", render: (row) => formatDate(row.createdAt) },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <Badge tone={STATUS_TONE[row.status] || "slate"}>{row.status}</Badge>
+              ),
+            },
             {
               key: "actions",
               label: "Decision",
-              render: (row) => (
-                <RowActions
-                  id={row.id}
-                  onAction={moderateListing}
-                  actions={[
-                    { label: "Approve", value: "Approved" },
-                    { label: "Remove", value: "Removed", tone: "danger" },
-                  ]}
-                />
-              ),
+              render: (row) =>
+                row.status === LISTING_STATUS.PENDING ? (
+                  <ModerationRow
+                    id={row.id}
+                    onAction={moderateListing}
+                    actions={[
+                      { label: "Approve", value: "approved" },
+                      { label: "Remove", value: "rejected", tone: "danger", needsReason: true },
+                    ]}
+                  />
+                ) : (
+                  <span className="text-[12px] text-slate-400">Decided</span>
+                ),
             },
           ]}
-          rows={rows}
+          rows={plain(rows)}
+          empty="No listings in the system yet."
         />
       </Section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="panel p-5 lg:col-span-2">
-          <p className="label-xs">Flag reasons (30 days)</p>
-          <div className="mt-4 space-y-3">
-            {reasons.map(([label, text, count]) => (
-              <div
-                key={label}
-                className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4"
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-red-50 font-display text-sm font-bold text-red-600">
-                  {count}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink">{label}</p>
-                  <p className="text-[13px] text-slate-500">{text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel p-5">
-          <p className="flex items-center gap-2 text-sm font-bold text-primary">
-            <AlertIcon className="h-4 w-4 text-secondary" />
-            Moderation rules
-          </p>
-          <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
-            <li>· Claims must match certificates attached to the listing.</li>
-            <li>· Unit pricing needs a basis (kg, MT, pc, m²).</li>
-            <li>· Third-party images require written permission.</li>
-            <li>· Three removals trigger a member warning review.</li>
-          </ul>
-          <Button variant="outline" size="sm" className="mt-4 w-full">
-            Open policy
-          </Button>
-        </div>
+      <div className="panel mt-6 p-5">
+        <p className="label-xs">Moderation rules</p>
+        <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
+          <li>· Claims must match certificates attached to the listing.</li>
+          <li>· Unit pricing needs a basis (kg, MT, pc, m²).</li>
+          <li>· Third-party images require written permission.</li>
+          <li>· Removals notify the seller with the written reason.</li>
+        </ul>
       </div>
-
-      <p className="mt-4 text-[12px] text-slate-400">
-        Sample rows — approvals and removals run through a server action that
-        checks <span className="font-semibold">admin.listings</span> and appends
-        an audit-log entry.
-      </p>
     </>
   );
 }

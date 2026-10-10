@@ -1,10 +1,11 @@
-import { console_ } from "@/lib/catalog";
 import { Badge, Button } from "@/components/ui";
-import { DataTable, Section, SampleNote, StatCards, WorkspaceHeader } from "@/components/workspace";
+import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 import { getPricingSettings, getFoundingSpots } from "@/lib/membership";
 import { formatBdt, formatUsd, serviceFeePrice } from "@/lib/pricing";
 import PricingSettingsForm from "@/components/pricing-settings-form";
+
+export const instant = false;
 
 export const metadata = { title: "Pricing & offers" };
 
@@ -100,18 +101,37 @@ export default async function ConsolePricingPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Section title="Offers & codes">
-          <DataTable
-            columns={[
-              { key: "code", label: "Code", emphasis: true },
-              { key: "type", label: "Type" },
-              { key: "uses", label: "Uses" },
-              { key: "expires", label: "Expires" },
-              { key: "status", label: "Status", pill: true },
-            ]}
-            rows={console_.offers}
-          />
-          <SampleNote text="Promotional codes are sample rows — the founding offer above is the live discount mechanism." />
+        <Section title="Founding offer">
+          {settings.founding.enabled ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-ink">{settings.founding.label || "Founding member pricing"}</p>
+                <Badge tone={spots.left > 0 ? "green" : "slate"}>
+                  {spots.left > 0 ? `${spots.left} spots left` : "Fully claimed"}
+                </Badge>
+              </div>
+              <dl className="mt-4 space-y-3 text-[13px] leading-6">
+                <div className="rounded-xl bg-surface p-3">
+                  <dt className="label-xs">Capacity</dt>
+                  <dd className="mt-1 text-slate-700">
+                    {spots.taken} of {spots.total} claimed — founding pricing applies per
+                    tier until the cap is reached.
+                  </dd>
+                </div>
+                <div className="rounded-xl bg-surface p-3">
+                  <dt className="label-xs">Effect</dt>
+                  <dd className="mt-1 text-slate-700">
+                    Founding prices are published on /membership alongside list prices and
+                    applied automatically at checkout while spots last.
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+              Founding pricing is switched off — every tier bills at list price.
+            </p>
+          )}
         </Section>
 
         <div className="panel p-6">

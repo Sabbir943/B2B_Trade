@@ -81,6 +81,7 @@ const NAV = {
       group: "Trade",
       items: [
         { label: "Leads", href: "/admin/leads", icon: TagIcon },
+        { label: "Requirements", href: "/admin/requirements", icon: ClipboardIcon },
         { label: "Inquiries", href: "/admin/inquiries", icon: InboxIcon },
         { label: "Payments", href: "/admin/payments", icon: CreditCardIcon },
         { label: "Market Entry", href: "/admin/market-entry", icon: GlobeIcon },

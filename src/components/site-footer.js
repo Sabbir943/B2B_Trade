@@ -1,11 +1,12 @@
 import Link from "next/link";
 import BrandLogo from "./brand-logo";
 import { shell } from "./shell";
-import { APP_LEGAL_NAME, APP_LOCATION, APP_URL } from "@/lib/brand";
+import { APP_LEGAL_NAME, APP_LOCATION, APP_URL, WHATSAPP_URL } from "@/lib/brand";
 import {
   FacebookIcon,
   LinkedInIcon,
   MapPinIcon,
+  WhatsAppIcon,
   XIcon,
   YoutubeIcon,
 } from "./icons";
@@ -62,6 +63,7 @@ const columns = [
 ];
 
 const socials = [
+  { label: "WhatsApp", href: WHATSAPP_URL, Icon: WhatsAppIcon },
   { label: "X", href: "https://x.com", Icon: XIcon },
   { label: "LinkedIn", href: "https://linkedin.com", Icon: LinkedInIcon },
   { label: "Facebook", href: "https://facebook.com", Icon: FacebookIcon },

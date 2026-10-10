@@ -29,6 +29,20 @@ function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const address = (searchParams.get("email") || "").trim().toLowerCase();
   const isNew = searchParams.get("new") === "1";
+  const next = (searchParams.get("next") || "").trim();
+
+  // Where "Continue" goes after a successful verification.
+  const continueHref = (() => {
+    const params = new URLSearchParams();
+    if (isNew) {
+      // New members finish onboarding first — sign-in will bounce there.
+      params.set("next", next || "/onboarding");
+    } else if (next) {
+      params.set("next", next);
+    }
+    params.set("verified", "1");
+    return `/sign-in?${params.toString()}`;
+  })();
 
   const inputs = useRef([]);
   const autoSent = useRef(false);
@@ -169,12 +183,18 @@ function VerifyOtpForm() {
               Email verified
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your account is confirmed. Sign in with your email and password to
-              continue.
+              {isNew
+                ? "Your account is confirmed. Sign in to finish setting up your company profile."
+                : "Your account is confirmed. Sign in with your email and password to continue."}
             </p>
-            <Button href="/sign-in?verified=1" variant="navy" className="mt-6 w-full">
+            <Button href={continueHref} variant="navy" className="mt-6 w-full">
               Continue to sign in
             </Button>
+            {isNew ? (
+              <Button href="/sign-in?verified=1" variant="outline" className="mt-3 w-full">
+                Skip onboarding for now
+              </Button>
+            ) : null}
           </>
         ) : (
           <>

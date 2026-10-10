@@ -10,18 +10,18 @@ const channels = [
   {
     title: "Support desk",
     text: "Account, verification and listing questions — typically answered within one working day.",
-    detail: "support@alliedoneltd.com",
+    detail: "",
     icon: MailIcon,
   },
   {
     title: "Sales & sourcing",
     text: "Membership plans, Sourcing Desk briefs and Market Entry engagements.",
-    detail: "sales@alliedoneltd.com",
+    detail: "",
     icon: MailIcon,
   },
   {
     title: "Office",
-    text: "AlliedOne Limited · Level 7, Bay's Galleria, Gulshan 1, Dhaka 1212",
+    text: "Dhaka, Bangladesh",
     detail: "Sunday–Thursday · 09:00–18:00 BST",
     icon: MapPinIcon,
   },
@@ -51,9 +51,11 @@ export default function ContactPage() {
                 <p className="mt-1 text-[13px] leading-6 text-slate-600">
                   {channel.text}
                 </p>
-                <p className="mt-2 text-[13px] font-semibold text-ink">
-                  {channel.detail}
-                </p>
+                {channel.detail ? (
+                  <p className="mt-2 text-[13px] font-semibold text-ink">
+                    {channel.detail}
+                  </p>
+                ) : null}
               </div>
             ))}
 

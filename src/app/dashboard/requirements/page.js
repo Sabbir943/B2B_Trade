@@ -1,22 +1,47 @@
-import { requirements as board } from "@/lib/catalog";
-import { Badge, Button, EmptyState } from "@/components/ui";
-import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
-import Link from "next/link";
+import RequirementsWorkspace from "@/components/requirements-workspace";
+import { Button } from "@/components/ui";
+import { WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
+import {
+  getRequirementsByBuyer,
+  quoteCountByRequirement,
+  ensureSourcingEscalation,
+} from "@/lib/requirements";
+import { getThreadsFor } from "@/lib/inbox";
+import { plain } from "@/lib/refs";
+
+export const instant = false;
 
 export const metadata = { title: "My requirements" };
 
-const posts = [];
-
-const stats = [
-  { label: "Open posts", value: "0", hint: "No activity yet" },
-  { label: "Quotes received", value: "0", hint: "No activity yet" },
-  { label: "Awarded", value: "0", hint: "No activity yet" },
-  { label: "Median response", value: "—", hint: "No activity yet" },
-];
-
+/**
+ * §7.3 buyer side — real posts with quote counts, award/close/review
+ * actions and the 72h no-quote Sourcing Desk escalation (idempotent on
+ * every view).
+ */
 export default async function RequirementsPage() {
-  await requirePermission("member.requirements");
+  const { user } = await requirePermission("member.requirements");
+
+  const posts = await getRequirementsByBuyer(user.email);
+  const counts = await quoteCountByRequirement(posts.map((row) => row.id));
+
+  // Idempotent: raises the Sourcing Desk request for any published post
+  // that has been live 72h with zero quotes (§7.3.5).
+  for (const post of posts) {
+    if (post.status === "published") await ensureSourcingEscalation(post);
+  }
+
+  const threads = await getThreadsFor(user.email);
+  const quoterMap = {};
+  for (const thread of threads) {
+    if (!thread.requirementId) continue;
+    const list = quoterMap[thread.requirementId] || (quoterMap[thread.requirementId] = []);
+    if (thread.counterpart && !list.some((item) => item.email === thread.counterpart)) {
+      list.push({ email: thread.counterpart, name: thread.counterpartName });
+    }
+  }
+
+  const rows = posts.map((post) => ({ ...post, quotes: counts.get(post.id) || 0 }));
 
   return (
     <>
@@ -30,71 +55,7 @@ export default async function RequirementsPage() {
         }
       />
 
-      <StatCards items={stats} />
-
-      <Section className="mt-6" title="Your posts">
-        <DataTable
-          columns={[
-            { key: "id", label: "Ref", emphasis: true },
-            { key: "title", label: "Requirement" },
-            { key: "qty", label: "Quantity" },
-            { key: "quotes", label: "Quotes" },
-            { key: "deadline", label: "Closes" },
-            { key: "status", label: "Status", pill: true },
-          ]}
-          rows={posts}
-          empty="You haven't posted a requirement yet."
-        />
-      </Section>
-
-      <div className="mt-6">
-        <Section
-          title="Open board — quoting now"
-          action={
-            <Link
-              href="/requirements"
-              className="text-[13px] font-semibold text-primary hover:underline"
-            >
-              View public board
-            </Link>
-          }
-        >
-          {board.length ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {board.slice(0, 3).map((item) => (
-                <div key={item.id} className="panel flex flex-col p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge tone="navy">{item.country}</Badge>
-                    <span className="text-[12px] text-slate-500">{item.posted}</span>
-                  </div>
-                  <p className="mt-3 font-display text-sm font-bold text-primary">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-[13px] text-slate-600">
-                    {item.qty} · {item.budget}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between pt-4">
-                    <span className="text-[12px] text-slate-500">
-                      Closes {item.deadline}
-                    </span>
-                    <Link
-                      href={`/requirements/${item.id}-${item.slug}`}
-                      className="text-[13px] font-semibold text-primary hover:underline"
-                    >
-                      View
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No open requirements on the board"
-              text="Public buyer posts will appear here as soon as they are published."
-            />
-          )}
-        </Section>
-      </div>
+      <RequirementsWorkspace posts={plain(rows)} quoterMap={plain(quoterMap)} />
     </>
   );
 }

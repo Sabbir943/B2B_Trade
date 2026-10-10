@@ -11,6 +11,10 @@ export const APP_LOCATION = "Dhaka, Bangladesh";
 
 export const APP_URL = "https://alliedoneltd.com";
 
+export const WHATSAPP_NUMBER = "+880 1323-777700";
+
+export const WHATSAPP_URL = "https://wa.me/8801323777700";
+
 export const APP_COLORS = {
   primary: "#0A5486",
   accent: "#F5A524",

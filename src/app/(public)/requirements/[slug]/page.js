@@ -1,22 +1,41 @@
 import { notFound } from "next/navigation";
-import { requirements } from "@/lib/catalog";
+import Link from "next/link";
 import { shell } from "@/components/shell";
 import { Badge, Breadcrumbs, Button, Panel, SectionTitle } from "@/components/ui";
-import { RequirementCard } from "@/components/cards";
+import PublicInquiry from "@/components/public-inquiry";
 import { AlertIcon, ClockIcon, ShieldIcon } from "@/components/icons";
-
-export const metadata = { title: "Requirement" };
+import { getRequirement, getPublishedRequirements, REQUIREMENT_STATUS } from "@/lib/requirements";
+import { categoriesById } from "@/lib/catalog";
+import { getSessionContext } from "@/lib/session";
+import { formatDate } from "@/lib/refs";
+import { connection } from "next/server";
 
 export const instant = false;
 
-export default async function RequirementDetailPage({ params }) {
-  const { slug } = await params;
-  const item = requirements.find(
-    (entry) => `${entry.id}-${entry.slug}` === slug,
-  );
-  if (!item) notFound();
+export const metadata = { title: "Requirement" };
 
-  const related = requirements.filter((entry) => entry.id !== item.id).slice(0, 3);
+
+/**
+ * §7.3 public requirement detail — buyers stay anonymous until they reply;
+ * suppliers respond through the on-platform inbox.
+ */
+export default async function RequirementDetailPage({ params }) {
+  await connection();
+  const { slug } = await params;
+  const id = String(slug).split("-")[0];
+  const item = await getRequirement(id);
+  const visible = item && [REQUIREMENT_STATUS.PUBLISHED, REQUIREMENT_STATUS.AWARDED, REQUIREMENT_STATUS.CLOSED].includes(item.status);
+  if (!visible) notFound();
+
+  const { user } = await getSessionContext();
+  const isBuyer = user && String(user.email).toLowerCase() === item.email;
+
+  const related = (await getPublishedRequirements({ category: item.category, limit: 6 })).filter(
+    (entry) => entry.id !== item.id,
+  );
+
+  const statusLabel =
+    item.status === REQUIREMENT_STATUS.AWARDED ? "Awarded" : item.status === REQUIREMENT_STATUS.CLOSED ? "Closed" : "Open";
 
   return (
     <section className={`py-7 sm:py-9 ${shell}`}>
@@ -32,55 +51,52 @@ export default async function RequirementDetailPage({ params }) {
         <div className="space-y-4 lg:col-span-2">
           <Panel>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={item.status === "Closing soon" ? "amber" : "green"}>
-                {item.status}
-              </Badge>
+              <Badge tone={item.status === REQUIREMENT_STATUS.PUBLISHED ? "green" : "slate"}>{statusLabel}</Badge>
               <Badge tone="slate">{item.id}</Badge>
-              <Badge tone="slate">Posted {item.posted}</Badge>
+              <Badge tone="slate">Posted {formatDate(item.publishedAt || item.createdAt)}</Badge>
             </div>
             <h1 className="mt-3 font-display text-xl font-bold leading-tight text-primary sm:text-2xl">
-              {item.title}
+              {item.product}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              {item.buyer} · {item.country}
+              {categoriesById[item.category]?.name || item.category}
+              {item.subcategory ? ` · ${item.subcategory}` : ""}
             </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
               <div>
                 <dt className="label-xs">Quantity</dt>
                 <dd className="mt-1 font-display text-base font-bold text-primary">
-                  {item.qty}
+                  {item.quantity} {item.unit}
                 </dd>
               </div>
               <div>
-                <dt className="label-xs">Budget</dt>
+                <dt className="label-xs">Target date</dt>
                 <dd className="mt-1 font-display text-base font-bold text-primary">
-                  {item.budget}
+                  {item.targetDate || "—"}
                 </dd>
               </div>
               <div>
                 <dt className="label-xs">Incoterm</dt>
                 <dd className="mt-1 font-display text-base font-bold text-primary">
-                  {item.incoterm}
+                  {item.shippingTerms}
                 </dd>
               </div>
               <div>
-                <dt className="label-xs">Closes</dt>
+                <dt className="label-xs">Destination</dt>
                 <dd className="mt-1 font-display text-base font-bold text-primary">
-                  {item.deadline}
+                  {item.destinationPort || "—"}
                 </dd>
               </div>
             </dl>
           </Panel>
 
           <Panel>
-            <p className="label-xs">Buyer notes</p>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              {item.desc ? `${item.desc} ` : null}Quotes should include unit
-              pricing, packing details, lead time from the loading port and
-              sample availability. Certified suppliers with shipment history in
-              this category will be reviewed first.
-            </p>
+            <p className="label-xs">Specifications</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-600">{item.specs}</p>
+            {item.hsCode ? (
+              <p className="mt-3 text-[13px] text-slate-500">HS code: {item.hsCode}</p>
+            ) : null}
           </Panel>
 
           <Panel>
@@ -90,13 +106,11 @@ export default async function RequirementDetailPage({ params }) {
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               <li className="flex gap-2">
                 <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                Keep payment and sampling conversations on-platform until
-                contracts are agreed.
+                Keep payment and sampling conversations on-platform until contracts are agreed.
               </li>
               <li className="flex gap-2">
                 <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                Responses close with the deadline above — early quotes rank
-                higher.
+                The buyer reviews quotes as they arrive — early responses rank higher.
               </li>
             </ul>
           </Panel>
@@ -105,17 +119,26 @@ export default async function RequirementDetailPage({ params }) {
         <div className="space-y-4">
           <div className="panel sticky top-28 p-5">
             <p className="label-xs">Respond</p>
-            <p className="mt-1 font-display text-lg font-bold text-primary">
-              Quote for this requirement
-            </p>
+            <p className="mt-1 font-display text-lg font-bold text-primary">Quote for this requirement</p>
             <p className="mt-2 text-[13px] leading-6 text-slate-600">
-              Send pricing, lead time and packing in one message. The buyer sees
-              your certification level beside your response.
+              Send pricing, lead time and packing in one message. Your certification
+              level shows beside your response.
             </p>
-            <Button href="/sign-up" variant="navy" className="mt-4 w-full">
-              Respond as a supplier
-            </Button>
-            <Button href="/rfq" variant="outline" size="sm" className="mt-2 w-full">
+            <div className="mt-4">
+              {isBuyer ? (
+                <Button href="/dashboard/requirements" variant="navy" className="w-full">
+                  This is your requirement
+                </Button>
+              ) : (
+                <PublicInquiry
+                  to={item.email}
+                  subject={`Quote: ${item.product}`}
+                  requirementId={item.id}
+                  signedIn={Boolean(user)}
+                />
+              )}
+            </div>
+            <Button href="/rfq" variant="outline" size="sm" className="mt-3 w-full">
               Post your own requirement
             </Button>
           </div>
@@ -127,7 +150,22 @@ export default async function RequirementDetailPage({ params }) {
           <SectionTitle eyebrow="More demand" title="Related requirements" />
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((entry) => (
-              <RequirementCard key={entry.id} item={entry} />
+              <Link
+                key={entry.id}
+                href={`/requirements/${entry.id}`}
+                className="panel group flex flex-col gap-3 p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <Badge tone="green">Open</Badge>
+                  <span className="text-[12px] text-slate-500">{entry.id}</span>
+                </div>
+                <h3 className="font-display text-[15px] font-bold leading-snug text-primary group-hover:underline">
+                  {entry.product}
+                </h3>
+                <p className="text-[13px] text-slate-600">
+                  {entry.quantity} {entry.unit} · {entry.shippingTerms}
+                </p>
+              </Link>
             ))}
           </div>
         </div>

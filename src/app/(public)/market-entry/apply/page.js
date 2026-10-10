@@ -1,7 +1,11 @@
 import ApplyForm from "@/components/apply-form";
 import { shell } from "@/components/shell";
-import { PageHeader } from "@/components/ui";
-import { CheckIcon } from "@/components/icons";
+import { Button, PageHeader } from "@/components/ui";
+import { CheckIcon, WhatsAppIcon } from "@/components/icons";
+import { getSessionContext } from "@/lib/session";
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from "@/lib/brand";
+
+export const instant = false;
 
 export const metadata = { title: "Market Entry application" };
 
@@ -11,7 +15,12 @@ const notes = [
   "One named officer from application to first shipment",
 ];
 
-export default function MarketEntryApplyPage() {
+/**
+ * §7.6 — applications are tied to the signed-in company account so the
+ * tracking console and officer messaging work off the same identity.
+ */
+export default async function MarketEntryApplyPage() {
+  const { user } = await getSessionContext();
   return (
     <>
       <PageHeader
@@ -28,7 +37,27 @@ export default function MarketEntryApplyPage() {
       <section className={`py-8 sm:py-10 ${shell}`}>
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="panel p-6 sm:p-8">
-            <ApplyForm />
+            {user ? (
+              <ApplyForm />
+            ) : (
+              <div className="text-center">
+                <h2 className="font-display text-lg font-bold text-primary">
+                  Sign in to apply
+                </h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Your application, officer messaging and stage history all live inside
+                  your company account.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <Button href="/sign-in?next=/market-entry/apply" variant="navy" size="sm">
+                    Sign in
+                  </Button>
+                  <Button href="/sign-up" variant="outline" size="sm">
+                    Create account
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="space-y-4">
@@ -49,11 +78,18 @@ export default function MarketEntryApplyPage() {
             <div className="panel bg-surface p-5">
               <p className="text-[13px] font-bold text-primary">Prefer to talk?</p>
               <p className="mt-2 text-[13px] leading-6 text-slate-600">
-                Call the market entry desk Sunday–Thursday, 09:00–18:00 BST.
+                Message the market entry desk on WhatsApp — Sunday–Thursday,
+                09:00–18:00 BST.
               </p>
-              <p className="mt-2 text-sm font-semibold text-ink">
-                +880 2 55 000 000
-              </p>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-success px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+                {WHATSAPP_NUMBER}
+              </a>
             </div>
           </aside>
         </div>

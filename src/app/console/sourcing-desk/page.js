@@ -1,112 +1,108 @@
-import { console_ } from "@/lib/catalog";
-import { Badge, Button } from "@/components/ui";
+import { Badge, EmptyState } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
+import { getSourcingRequests } from "@/lib/requirements";
+import { listOfficers } from "@/lib/market-entry";
+import { formatDate } from "@/lib/refs";
+
+export const instant = false;
 
 export const metadata = { title: "Sourcing Desk" };
 
+const reasonLabel = (reason) => String(reason || "").replace(/_/g, " ");
+
 export default async function ConsoleSourcingDeskPage() {
   await requirePermission("console.sourcing_desk");
+  const [requests, officers] = await Promise.all([
+    getSourcingRequests(200),
+    listOfficers(),
+  ]);
+
+  const open = requests.filter((item) => item.status === "open");
+  const auto = requests.filter((item) => item.source === "auto");
+  const manual = requests.filter((item) => item.source !== "auto");
+
   const stats = [
-    { label: "Open briefs", value: "23", hint: "Across two desks" },
-    { label: "Value in play", value: "$4.8M", hint: "Sample figure" },
-    { label: "SLA breaches", value: "1", hint: "SD-771 · 4 hrs left" },
-    { label: "Matched this week", value: "9", hint: "Awaiting buyer confirmation" },
+    { label: "Open briefs", value: String(open.length), hint: `${requests.length} total requests` },
+    { label: "Auto-escalations", value: String(auto.length), hint: "72h no-quote rule" },
+    { label: "Manual requests", value: String(manual.length), hint: "Buyer clicked Request Sourcing Help" },
+    { label: "Officers", value: String(officers.length), hint: "Eligible to own a brief" },
   ];
 
-  const desks = [
-    ["Desk A", "R. Chowdhury · I. Hossain", "14 briefs", "$3.4M"],
-    ["Desk B", "S. Karim", "9 briefs", "$1.4M"],
-  ];
+  const rows = requests.map((item) => ({
+    id: item.id,
+    lead: item.title,
+    buyer: item.buyerEmail,
+    reason: reasonLabel(item.reason),
+    source: item.source,
+    opened: formatDate(item.createdAt),
+    status: item.status,
+  }));
 
   return (
     <>
       <WorkspaceHeader
         title="Sourcing Desk"
-        description="Managed briefs with named officers and SLA clocks. Escalate before the clock expires, not after."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              Officer roster
-            </Button>
-            <Button variant="navy" size="sm">
-              Assign brief
-            </Button>
-          </>
-        }
+        description="Managed briefs raised by the 72-hour no-quote rule or by buyers. Every request is tied to a published requirement."
       />
 
       <StatCards items={stats} />
 
-      <Section className="mt-6" title="Active briefs">
-        <DataTable
-          columns={[
-            { key: "id", label: "Brief", emphasis: true },
-            { key: "lead", label: "Requirement" },
-            { key: "owner", label: "Owner" },
-            { key: "value", label: "Value" },
-            { key: "sla", label: "SLA" },
-            { key: "status", label: "Status", pill: true },
-          ]}
-          rows={console_.desk}
-        />
+      <Section className="mt-6" title="Briefs">
+        {rows.length ? (
+          <DataTable
+            columns={[
+              { key: "id", label: "Brief", emphasis: true },
+              { key: "lead", label: "Requirement" },
+              { key: "buyer", label: "Buyer" },
+              { key: "reason", label: "Reason" },
+              { key: "source", label: "Source" },
+              { key: "opened", label: "Opened" },
+              { key: "status", label: "Status", pill: true },
+            ]}
+            rows={rows}
+          />
+        ) : (
+          <EmptyState
+            title="Desk is clear"
+            text="Requirements with zero quotes after 72 hours escalate here automatically; buyers can also request help from their dashboard."
+          />
+        )}
       </Section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="panel p-5 lg:col-span-2">
-          <p className="label-xs">Desk performance</p>
-          <div className="mt-4 space-y-4">
-            {[
-              ["Briefs matched within SLA", 92],
-              ["Buyer confirmation rate", 74],
-              ["Repeat briefs from the same buyer", 61],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <div className="flex items-baseline justify-between">
-                  <p className="text-sm text-ink">{label}</p>
-                  <p className="font-display text-sm font-bold text-primary">{value}%</p>
-                </div>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="panel p-5">
+          <p className="label-xs">Eligible officers</p>
+          {officers.length ? (
+            <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
+              {officers.map((officer) => (
+                <li key={officer.email} className="flex items-center justify-between gap-3">
+                  <span className="truncate font-semibold text-ink">{officer.email}</span>
+                  <Badge tone="navy">{officer.role}</Badge>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[13px] leading-6 text-slate-600">
+              No staff accounts yet — officers are drawn from staff roles.
+            </p>
+          )}
         </div>
 
-        <div className="space-y-4">
-          <div className="panel p-5">
-            <p className="label-xs">Desks</p>
-            <div className="mt-3 space-y-3">
-              {desks.map(([name, staff, briefs, value]) => (
-                <div key={name} className="rounded-lg bg-surface p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-primary">{name}</p>
-                    <Badge tone="navy">{briefs}</Badge>
-                  </div>
-                  <p className="mt-1 text-[12px] text-slate-500">{staff}</p>
-                  <p className="text-[12px] font-semibold text-ink">{value} in play</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel p-5">
-            <p className="label-xs">Escalation</p>
-            <p className="mt-2 text-[13px] leading-6 text-slate-600">
-              Briefs within four hours of SLA expiry page the desk lead. Two
-              briefs are currently in that window.
-            </p>
-            <Button variant="navy" size="sm" className="mt-3 w-full">
-              View expiring
-            </Button>
-          </div>
+        <div className="panel p-5">
+          <p className="label-xs">How briefs open</p>
+          <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
+            <li>
+              <strong className="text-ink">auto</strong> — a published requirement had zero
+              quotes after 72 hours; the rule runs idempotently on every view.
+            </li>
+            <li>
+              <strong className="text-ink">manual</strong> — the buyer pressed
+              &ldquo;Request Sourcing Help&rdquo; from their requirements dashboard.
+            </li>
+          </ul>
         </div>
       </div>
-
-      <p className="mt-4 text-[12px] text-slate-400">
-        Sample data shown for preview purposes.
-      </p>
     </>
   );
 }

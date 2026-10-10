@@ -120,7 +120,3 @@ export function Section({ title, action, children, className = "" }) {
     </section>
   );
 }
-
-export function SampleNote({ text = "Sample data shown for preview purposes." }) {
-  return <p className="mt-4 text-[12px] text-slate-400">{text}</p>;
-}

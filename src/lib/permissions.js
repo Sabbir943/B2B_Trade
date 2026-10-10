@@ -117,11 +117,12 @@ const GRANTS = {
     "admin.reports",
   ],
 
-  // Staff: Content — CMS/blog and listing moderation.
+  // Staff: Content — CMS/blog, listing and buy-requirement moderation.
   staff_content: [
     "admin.overview",
     "admin.content",
     "admin.listings",
+    "admin.requirements",
     "admin.reports",
   ],
 
@@ -153,6 +154,7 @@ export const PATH_PERMISSIONS = [
   ["/dashboard/settings", "member.settings"],
   ["/dashboard", "dashboard.home"],
   ["/admin/verification-queue", "admin.verification_queue"],
+  ["/admin/requirements", "admin.requirements"],
   ["/admin/market-entry", "admin.market_entry"],
   ["/admin/members", "admin.members"],
   ["/admin/listings", "admin.listings"],
@@ -238,7 +240,7 @@ export const ROLE_MATRIX = [
   ],
   [
     "Staff — Support / Content / Sales",
-    "Sub-roles: Members & inquiries & market-entry applications (Support) · CMS and listing moderation (Content) · Leads & invoices (Sales). No Sourcing Desk private console, no platform settings.",
+    "Sub-roles: Members & inquiries & market-entry applications (Support) · CMS, listing and buy-requirement moderation (Content) · Leads & invoices (Sales). No Sourcing Desk private console, no platform settings.",
   ],
   [
     "Super Admin",

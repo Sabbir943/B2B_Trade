@@ -1,137 +1,169 @@
-import { admin } from "@/lib/catalog";
-import { Badge, Button } from "@/components/ui";
-import { CheckIcon, ShieldIcon } from "@/components/icons";
+import { ModerationRow } from "@/components/moderation-actions";
+import { StaffSelect } from "@/components/staff-select";
+import { Badge } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
-import { getStaffStatuses } from "@/lib/audit";
-import { decideVerificationCase } from "@/lib/actions";
-import { RowActions } from "@/components/staff-actions";
+import {
+  getVerificationQueue,
+  listAllBadges,
+  VERIFICATION_METHODS,
+  statusLabel,
+} from "@/lib/verification";
+import {
+  decideVerificationCase,
+  assignVerificationMethod,
+  revokeVerificationBadge,
+} from "@/lib/actions";
+import { plain, formatDate } from "@/lib/refs";
+
+export const instant = false;
 
 export const metadata = { title: "Verification queue" };
 
+const STATUS_TONE = {
+  submitted: "amber",
+  in_review: "blue",
+  visit_scheduled: "navy",
+  awaiting_payment: "slate",
+};
+
+const METHOD_OPTIONS = VERIFICATION_METHODS.map((method) => ({
+  value: method.key,
+  label: method.label,
+}));
+
+/**
+ * §7.5.3–5 queue — assign a verification method (opens the officer task),
+ * decide the case (approve awards the badge; reject needs a reason) and
+ * revoke badges when a complaint is proven.
+ */
 export default async function AdminVerificationQueuePage() {
   await requirePermission("admin.verification_queue");
-  const statuses = await getStaffStatuses("verification_case");
-  const rows = admin.queue.map((item) => ({
-    ...item,
-    status: statuses[item.id]?.status ?? "Open",
-  }));
-  const stats = [
-    { label: "Open cases", value: "24", hint: "4 older than 48 hrs" },
-    { label: "Median review", value: "9 hrs", hint: "Target 24 hrs" },
-    { label: "Audits scheduled", value: "6", hint: "This week" },
-    { label: "Rejections (30d)", value: "11", hint: "Mostly missing licences" },
-  ];
 
-  const checklist = [
-    "Registration documents match the registry extract",
-    "Trade licence is current and category-appropriate",
-    "Bank letter is on letterhead with a verifiable contact",
-    "Certificates cover the products actually listed",
-    "Factory address confirmed before scheduling an audit",
+  const queue = await getVerificationQueue();
+  const badges = await listAllBadges(50);
+  const rows = plain(queue);
+  const badgeRows = plain(badges).slice(0, 20);
+
+  const stats = [
+    { label: "Open cases", value: String(rows.length), hint: "Non-terminal" },
+    { label: "Awaiting visit", value: String(rows.filter((row) => row.status === "visit_scheduled").length), hint: "Site / partner visit" },
+    { label: "Document checks", value: String(rows.filter((row) => row.method === "document_check").length), hint: "Desk review" },
+    { label: "Badges live", value: String(badgeRows.filter((row) => !row.revokedAt).length), hint: "Not revoked" },
   ];
 
   return (
     <>
       <WorkspaceHeader
         title="Verification queue"
-        description="Cases ordered by age and risk. Approving a case publishes the badge immediately across search and listings."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              Assign cases
-            </Button>
-            <Button variant="navy" size="sm">
-              Next case
-            </Button>
-          </>
-        }
+        description="Cases ordered by age. Approving publishes the badge with its award date and method across profiles, listings and threads."
+        actions={<Badge tone="amber">{rows.length} open</Badge>}
       />
 
       <StatCards items={stats} />
 
-      <Section className="mt-6" title="Queue">
+      <Section className="mt-6" title="Cases">
         <DataTable
           columns={[
             { key: "id", label: "Case", emphasis: true },
-            { key: "company", label: "Company" },
-            { key: "type", label: "Check" },
-            { key: "submitted", label: "Submitted" },
-            { key: "age", label: "Age" },
-            { key: "risk", label: "Risk", pill: true },
-            { key: "status", label: "Status", pill: true },
+            { key: "email", label: "Company" },
+            { key: "levelLabel", label: "Level" },
+            {
+              key: "method",
+              label: "Method",
+              render: (row) => (
+                <StaffSelect
+                  value={row.method}
+                  options={METHOD_OPTIONS}
+                  placeholder="Assign method…"
+                  onAction={(method) => assignVerificationMethod(row.id, method)}
+                />
+              ),
+            },
+            { key: "createdAt", label: "Submitted", render: (row) => formatDate(row.createdAt) },
+            {
+              key: "documents",
+              label: "Docs",
+              render: (row) => `${row.documents?.length || 0} file${row.documents?.length === 1 ? "" : "s"}`,
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <Badge tone={STATUS_TONE[row.status] || "slate"}>{statusLabel(row.status)}</Badge>
+              ),
+            },
             {
               key: "actions",
               label: "Decision",
               render: (row) => (
-                <RowActions
+                <ModerationRow
                   id={row.id}
                   onAction={decideVerificationCase}
                   actions={[
                     { label: "Approve", value: "Approved" },
-                    { label: "Request visit", value: "Visit requested" },
-                    { label: "Reject", value: "Rejected", tone: "danger" },
+                    { label: "Visit", value: "Visit requested" },
+                    { label: "Reject", value: "Rejected", tone: "danger", needsReason: true },
                   ]}
                 />
               ),
             },
           ]}
           rows={rows}
+          empty="Queue is clear — no open verification cases."
         />
       </Section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="panel p-6">
-          <p className="flex items-center gap-2 text-sm font-bold text-primary">
-            <ShieldIcon className="h-4 w-4 text-secondary" />
-            Review standard
-          </p>
-          <ul className="mt-3 space-y-2.5">
-            {checklist.map((item) => (
-              <li key={item} className="flex gap-2.5 text-[13px] leading-6 text-slate-600">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-success/12 text-success">
-                  <CheckIcon className="h-3.5 w-3.5" />
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <Section className="mt-8" title="Badges">
+        <DataTable
+          columns={[
+            { key: "id", label: "Badge", emphasis: true },
+            { key: "email", label: "Company" },
+            { key: "levelLabel", label: "Level" },
+            { key: "methodLabel", label: "Method" },
+            { key: "awardedAt", label: "Awarded", render: (row) => formatDate(row.awardedAt) },
+            { key: "expiresAt", label: "Expires", render: (row) => formatDate(row.expiresAt) },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <Badge tone={row.revokedAt ? "red" : "green"}>
+                  {row.revokedAt ? "Revoked" : "Active"}
+                </Badge>
+              ),
+            },
+            {
+              key: "actions",
+              label: "",
+              render: (row) =>
+                row.revokedAt ? (
+                  <span className="text-[12px] text-slate-400">Revoked</span>
+                ) : (
+                  <ModerationRow
+                    id={row.id}
+                    onAction={revokeVerificationBadge}
+                    actions={[
+                      { label: "Revoke", value: "revoke", tone: "danger", needsReason: true },
+                    ]}
+                  />
+                ),
+            },
+          ]}
+          rows={badgeRows}
+          empty="No badges issued yet."
+        />
+      </Section>
 
-        <div className="space-y-4">
-          <div className="panel p-5">
-            <p className="label-xs">By check type</p>
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              {[
-                ["Company", "11"],
-                ["Documents", "9"],
-                ["Factory", "4"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg bg-surface p-3 text-center">
-                  <p className="font-display text-xl font-bold text-primary">{value}</p>
-                  <p className="text-[12px] text-slate-500">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel p-5">
-            <p className="label-xs">Escalation rule</p>
-            <p className="mt-2 text-[13px] leading-6 text-slate-600">
-              High-risk cases route to a Super Admin automatically after 24
-              hours and cannot be approved by the assigning officer alone.
-            </p>
-            <Badge tone="amber" className="mt-3">
-              Dual approval required
-            </Badge>
-          </div>
-        </div>
+      <div className="panel mt-6 p-5">
+        <p className="label-xs">Review standard</p>
+        <ul className="mt-3 space-y-2 text-[13px] leading-6 text-slate-600">
+          <li>· Registration documents match the registry extract.</li>
+          <li>· Trade licence is current and category-appropriate.</li>
+          <li>· Certificates cover the products actually listed.</li>
+          <li>· Factory address confirmed before scheduling an audit.</li>
+          <li>· A proven complaint revokes the badge and strips the flag.</li>
+        </ul>
       </div>
-
-      <p className="mt-4 text-[12px] text-slate-400">
-        Sample queue rows — but every decision is enforced server-side and
-        written to the audit log with actor, role and case ID.
-      </p>
     </>
   );
 }

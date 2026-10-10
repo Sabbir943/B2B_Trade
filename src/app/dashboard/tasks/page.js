@@ -3,19 +3,39 @@ import { ShieldIcon } from "@/components/icons";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 import { getStaffStatuses } from "@/lib/audit";
+import { listTasks } from "@/lib/verification";
 import { updateAssignedTask } from "@/lib/actions";
 import { RowActions } from "@/components/staff-actions";
+import { formatDate } from "@/lib/refs";
+
+export const instant = false;
 
 export const metadata = { title: "Verification tasks" };
 
-const assignedTasks = [];
+const STATUS_LABELS = {
+  open: "Pending",
+  pending: "Pending",
+  in_progress: "In progress",
+  completed: "Completed",
+  blocked: "Blocked",
+};
 
+/**
+ * §7.5 verification — verification partners only see the tasks assigned to
+ * them (enforced by the assignee filter, not just the permission gate).
+ */
 export default async function VerificationTasksPage() {
   const { user } = await requirePermission("verification.assigned.view");
-  const statuses = await getStaffStatuses("verification_task");
-  const rows = assignedTasks.map((task) => ({
+  const [tasks, statuses] = await Promise.all([
+    listTasks({ assignee: user.email }),
+    getStaffStatuses("verification_task"),
+  ]);
+
+  const rows = tasks.map((task) => ({
     ...task,
-    status: statuses[task.id]?.status ?? task.defaultStatus,
+    company: task.email,
+    type: task.methodLabel || task.method,
+    status: STATUS_LABELS[statuses[task.id]?.status] || STATUS_LABELS[task.status] || "Pending",
   }));
 
   const open = rows.filter((row) => row.status !== "Completed").length;
@@ -47,7 +67,7 @@ export default async function VerificationTasksPage() {
             { key: "id", label: "Task", emphasis: true },
             { key: "company", label: "Company" },
             { key: "type", label: "Check type" },
-            { key: "due", label: "Due" },
+            { key: "due", label: "Due", render: (row) => formatDate(row.dueAt) },
             { key: "status", label: "Status", pill: true },
             {
               key: "actions",

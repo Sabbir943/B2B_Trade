@@ -16,6 +16,20 @@ import {
   writePricingSettings,
   trialExpiry,
 } from "./membership";
+import { setListingStatus } from "./listings";
+import {
+  approveCase,
+  assignMethod,
+  ensureVerificationTask,
+  rejectCase,
+  revokeBadge,
+  setCaseStatus,
+  updateTaskStatus,
+} from "./verification";
+import { publishRequirement, rejectRequirement } from "./requirements";
+import { decideReport } from "./inbox";
+import { advanceApplication, assignOfficer } from "./market-entry";
+import { activateBankTransfer, createInvoice } from "./billing";
 
 /**
  * Staff & privileged server actions.
@@ -23,40 +37,257 @@ import {
  * data, then writes an immutable audit-log entry (actor, role, target).
  */
 
-export async function decideVerificationCase(targetId, decision) {
+/**
+ * §7.5 — verification queue decisions.
+ * `Approved` awards the badge (date + method on the profile), `Rejected`
+ * stores the reason, `Visit requested` moves the case to a scheduled visit.
+ */
+export async function decideVerificationCase(targetId, decision, reason = "") {
   const { user, role } = await requirePermission("admin.verification_queue");
+
+  let result = { ok: true };
+  if (decision === "Approved") {
+    result = await approveCase(targetId, user.email);
+  } else if (decision === "Rejected") {
+    result = await rejectCase(targetId, reason, user.email);
+  } else {
+    result = await setCaseStatus(targetId, "visit_scheduled", user.email, reason);
+  }
+
+  if (!result.ok) return { ok: false, error: result.error || "Decision failed." };
 
   await setStaffStatus("verification_case", targetId, decision, {
     decidedBy: user.email,
   });
   await recordAudit({
-    action: `verification.case.${decision}`,
+    action: `verification.case.${String(decision).toLowerCase().replace(/\s+/g, "_")}`,
     target: `case:${targetId}`,
-    detail: { decision },
+    detail: { decision, reason },
     actor: user.email,
     actorRole: role,
   });
 
   revalidatePath("/admin/verification-queue");
+  revalidatePath("/dashboard/verification");
   return { ok: true, decision };
 }
 
-export async function moderateListing(targetId, decision) {
+/** §7.5.3 — assign the method used to verify a case, and open the task. */
+export async function assignVerificationMethod(caseId, method) {
+  const { user, role } = await requirePermission("admin.verification_queue");
+
+  const assigned = await assignMethod(caseId, method, user.email);
+  if (!assigned.ok) return { ok: false, error: assigned.error || "Could not assign the method." };
+
+  const task = await ensureVerificationTask(caseId, method);
+
+  await recordAudit({
+    action: "verification.method.assign",
+    target: `case:${caseId}`,
+    detail: { method, taskId: task?.id ?? null },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/verification-queue");
+  revalidatePath("/dashboard/tasks");
+  return { ok: true, method };
+}
+
+/** §7.5.5 — revoke a badge when a complaint is proven. */
+export async function revokeVerificationBadge(badgeId, reason) {
+  const { user, role } = await requirePermission("admin.verification_queue");
+
+  const result = await revokeBadge(badgeId, reason, user.email);
+  if (!result.ok) return { ok: false, error: result.error || "Could not revoke the badge." };
+
+  await recordAudit({
+    action: "verification.badge.revoke",
+    target: `badge:${badgeId}`,
+    detail: { reason },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/verification-queue");
+  revalidatePath("/dashboard/verification");
+  return { ok: true };
+}
+
+/**
+ * §7.2.2 — listing moderation: approve, or reject with a reason the seller
+ * sees on their listing.
+ */
+export async function moderateListing(targetId, decision, reason = "") {
   const { user, role } = await requirePermission("admin.listings");
+
+  const approved = String(decision).toLowerCase() === "approved";
+  const result = await setListingStatus(targetId, approved ? "approved" : "rejected", {
+    reason: approved ? "" : reason,
+    moderator: user.email,
+  });
+  if (!result.ok) return { ok: false, error: result.error || "Moderation failed." };
 
   await setStaffStatus("listing", targetId, decision, {
     moderatedBy: user.email,
   });
   await recordAudit({
-    action: `listing.${decision}`,
+    action: `listing.${String(decision).toLowerCase().replace(/\s+/g, "_")}`,
     target: `listing:${targetId}`,
-    detail: { decision },
+    detail: { decision, reason },
     actor: user.email,
     actorRole: role,
   });
 
   revalidatePath("/admin/listings");
+  revalidatePath("/dashboard/products");
   return { ok: true, decision };
+}
+
+/** §7.3.2 — requirement moderation (approve publishes + auto-matches). */
+export async function moderateRequirement(targetId, decision, reason = "") {
+  const { user, role } = await requirePermission("admin.requirements");
+
+  const approved = String(decision).toLowerCase() === "approved";
+  const result = approved
+    ? await publishRequirement(targetId, user.email)
+    : await rejectRequirement(targetId, reason, user.email);
+
+  if (!result.ok) return { ok: false, error: result.error || "Moderation failed." };
+
+  await setStaffStatus("requirement", targetId, decision, { moderatedBy: user.email });
+  await recordAudit({
+    action: `requirement.${String(decision).toLowerCase().replace(/\s+/g, "_")}`,
+    target: `requirement:${targetId}`,
+    detail: { decision, reason, matched: result.matched ?? 0 },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/requirements");
+  revalidatePath("/dashboard/requirements");
+  revalidatePath("/requirements");
+  return { ok: true, decision, matched: result.matched ?? 0 };
+}
+
+/** §7.4.4 — Inquiry Monitor decisions on member reports. */
+export async function resolveInquiryReport(reportId, status) {
+  const { user, role } = await requirePermission("admin.inquiries");
+
+  const result = await decideReport(reportId, status, user.email);
+  if (!result.ok) return { ok: false, error: result.error || "Could not update the report." };
+
+  await recordAudit({
+    action: `inquiry.report.${status}`,
+    target: `report:${reportId}`,
+    detail: { status },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/inquiries");
+  revalidatePath("/dashboard/inquiries");
+  return { ok: true, status };
+}
+
+/** §7.6.2–4 — market-entry pipeline steps taken by staff. */
+export async function advanceMarketEntryStage(targetId, stage, note = "") {
+  const { user, role } = await requirePermission("admin.market_entry");
+
+  const result = await advanceApplication(targetId, stage, user.email, note);
+  if (!result.ok) return { ok: false, error: result.error || "Could not update the stage." };
+
+  await recordAudit({
+    action: `market_entry.stage.${stage}`,
+    target: `application:${targetId}`,
+    detail: { stage, note },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/market-entry");
+  revalidatePath("/dashboard/market-entry");
+  return { ok: true, stage };
+}
+
+export async function assignMarketEntryOfficer(targetId, officer) {
+  const { user, role } = await requirePermission("admin.market_entry");
+
+  const result = await assignOfficer(targetId, officer, user.email);
+  if (!result.ok) return { ok: false, error: "Could not assign the officer." };
+
+  await recordAudit({
+    action: "market_entry.officer.assign",
+    target: `application:${targetId}`,
+    detail: { officer },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/market-entry");
+  return { ok: true, officer };
+}
+
+/** §7.6.5 — issue the monthly retainer invoice from the admin panel. */
+export async function issueMarketEntryRetainer(targetId) {
+  const { user, role } = await requirePermission("admin.payments");
+
+  const application = await db.collection("market_entry_applications").findOne({ id: String(targetId) });
+  if (!application) return { ok: false, error: "Application not found." };
+  if (!["contract", "active"].includes(application.stage)) {
+    return { ok: false, error: "Retainers start once the contract stage is reached." };
+  }
+
+  const settings = await getPricingSettings();
+  const fee = settings.serviceFees.find((item) => item.key === "market_entry");
+  const amountUsd = Number(fee?.retainerUsdMin) || 500;
+
+  const invoice = await createInvoice({
+    email: application.email,
+    kind: "retainer",
+    label: `Market entry retainer — ${application.company}`,
+    amountUsd,
+    currency: "USD",
+    context: { applicationId: application.id, company: application.company },
+  });
+  if (!invoice.ok) return { ok: false, error: "Could not create the retainer invoice." };
+
+  await recordAudit({
+    action: "market_entry.retainer.issue",
+    target: `application:${application.id}`,
+    detail: { invoiceId: invoice.invoice.id, amountUsd },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  if (application.stage === "contract") {
+    await advanceApplication(application.id, "active", user.email, "Retainer billing started");
+  }
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/market-entry");
+  revalidatePath("/dashboard/membership");
+  return { ok: true, invoiceId: invoice.invoice.id, amountUsd };
+}
+
+/** §7.7.3 — staff activate a membership after the bank transfer arrives. */
+export async function activateBankTransferPayment(invoiceId) {
+  const { user, role } = await requirePermission("admin.payments");
+
+  const result = await activateBankTransfer(invoiceId, user.email);
+  if (!result.ok) return { ok: false, error: result.error || "Could not activate the payment." };
+
+  await recordAudit({
+    action: "billing.membership.activated",
+    target: `invoice:${invoiceId}`,
+    detail: { method: "bank", tier: result.invoice?.tier ?? null },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/dashboard/membership");
+  return { ok: true };
 }
 
 export async function assignStaffRole(email, nextRole) {
@@ -226,13 +457,17 @@ export async function grantSilverTrial(email) {
 export async function updateAssignedTask(taskId, status) {
   const { user, role } = await requirePermission("verification.assigned.update");
 
-  await setStaffStatus("verification_task", taskId, status, {
-    updatedBy: user.email,
-  });
+  // The UI speaks in labels; storage speaks in keys.
+  const mapped =
+    { "In progress": "in_progress", Completed: "completed", Blocked: "blocked" }[status] || status;
+
+  const result = await updateTaskStatus(taskId, mapped, user.email);
+  if (!result.ok) return { ok: false, error: result.error || "Task update failed." };
+
   await recordAudit({
-    action: `verification.task.${status}`,
+    action: `verification.task.${mapped}`,
     target: `task:${taskId}`,
-    detail: { status },
+    detail: { status: mapped },
     actor: user.email,
     actorRole: role,
   });

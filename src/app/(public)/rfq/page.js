@@ -1,7 +1,10 @@
 import RfqForm from "@/components/rfq-form";
 import { shell } from "@/components/shell";
-import { Badge, PageHeader } from "@/components/ui";
-import { CheckIcon } from "@/components/icons";
+import { Badge, Button, PageHeader } from "@/components/ui";
+import { CheckIcon, InboxIcon } from "@/components/icons";
+import { getSessionContext } from "@/lib/session";
+
+export const instant = false;
 
 export const metadata = { title: "Post Your Requirement" };
 
@@ -12,7 +15,13 @@ const perks = [
   "No cost for buyers at any membership level",
 ];
 
-export default function RfqPage() {
+/**
+ * §7.3.1 — posting requires a signed-in company account: replies and
+ * moderation all key off the account email, so visitors are offered the
+ * sign-up path instead of the form.
+ */
+export default async function RfqPage() {
+  const { user } = await getSessionContext();
   return (
     <>
       <PageHeader
@@ -28,7 +37,30 @@ export default function RfqPage() {
       <section className={`py-8 sm:py-10 ${shell}`}>
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="panel p-6 sm:p-8">
-            <RfqForm />
+            {user ? (
+              <RfqForm />
+            ) : (
+              <div className="text-center">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/8 text-primary">
+                  <InboxIcon className="h-6 w-6" />
+                </span>
+                <h2 className="mt-4 font-display text-lg font-bold text-primary">
+                  Sign in to post a requirement
+                </h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Quotes, moderation updates and supplier replies are delivered to your
+                  account inbox — it takes a minute to create one.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <Button href="/sign-in?next=/rfq" variant="navy" size="sm">
+                    Sign in
+                  </Button>
+                  <Button href="/sign-up" variant="outline" size="sm">
+                    Create account
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="space-y-4">
