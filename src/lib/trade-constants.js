@@ -45,7 +45,7 @@ export const DOCUMENT_TYPES = [
 export const BANK_DETAILS = {
   name: "AlliedOne Trade Hub",
   account: "AlliedOne Trade Hub Ltd.",
-  bank: "City Bank PLC, Gulshan branch, Dhaka",
+  bank: "City Bank PLC, Dhaka",
   accountNumber: "BD 0000 0000 0000 0000",
   swift: "CIBLBDDH",
   note: "Quote the proforma number as the payment reference.",
