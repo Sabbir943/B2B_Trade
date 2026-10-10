@@ -143,6 +143,16 @@ export function BuildingIcon(props) {
   );
 }
 
+export function BankIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 10 12 5l8.5 5" />
+      <path d="M5.5 10.5v6.5M9.8 10.5v6.5M14.2 10.5v6.5M18.5 10.5v6.5" />
+      <path d="M4 19.5h16" />
+    </Svg>
+  );
+}
+
 export function FileTextIcon(props) {
   return (
     <Svg {...props}>

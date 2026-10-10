@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BrandLogo from "./brand-logo";
 import { shell } from "./shell";
+import { PAYMENT_CHIP_CLASS, paymentMarks } from "./payment-marks";
 import { APP_LEGAL_NAME, APP_LOCATION, APP_URL, WHATSAPP_URL } from "@/lib/brand";
 import {
   FacebookIcon,
@@ -69,8 +70,6 @@ const socials = [
   { label: "Facebook", href: "https://facebook.com", Icon: FacebookIcon },
   { label: "YouTube", href: "https://youtube.com", Icon: YoutubeIcon },
 ];
-
-const payments = ["VISA", "Mastercard", "Amex", "PayPal", "bKash", "Nagad"];
 
 async function copyrightYear() {
   "use cache";
@@ -144,12 +143,13 @@ export default async function SiteFooter() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {payments.map((brand) => (
+            {paymentMarks.map(({ label, Mark }) => (
               <span
-                key={brand}
-                className="rounded-md bg-white/10 px-2 py-1 text-[10px] font-bold tracking-wide text-white/75 ring-1 ring-white/10"
+                key={label}
+                title={label}
+                className={PAYMENT_CHIP_CLASS}
               >
-                {brand}
+                <Mark />
               </span>
             ))}
           </div>
