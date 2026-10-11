@@ -170,6 +170,71 @@ export async function moderateRequirement(targetId, decision, reason = "") {
   return { ok: true, decision, matched: result.matched ?? 0 };
 }
 
+/**
+ * Staff delete actions — used from the moderation tables when a record has to
+ * be removed completely (spam, duplicate, banned seller). Every delete is
+ * audit-logged with the title and owner captured before the row disappears.
+ */
+export async function adminDeleteListing(targetId) {
+  const { user, role } = await requirePermission("admin.listings");
+
+  const listing = await db.collection("listings").findOne({ id: String(targetId) });
+  if (!listing) return { ok: false, error: "That listing no longer exists." };
+
+  try {
+    const result = await db.collection("listings").deleteOne({ id: String(targetId) });
+    if (result.deletedCount !== 1) return { ok: false, error: "The listing could not be removed." };
+    await db.collection("staff_status").deleteOne({ kind: "listing", targetId: String(targetId) });
+  } catch (error) {
+    console.error("[admin] listing delete failed", error.message);
+    return { ok: false, error: "The listing could not be removed." };
+  }
+
+  await recordAudit({
+    action: "listing.delete",
+    target: `listing:${targetId}`,
+    detail: { title: listing.title, owner: listing.email },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/listings");
+  revalidatePath("/search");
+  return { ok: true };
+}
+
+export async function adminDeleteRequirement(targetId) {
+  const { user, role } = await requirePermission("admin.requirements");
+
+  const requirement = await db.collection("requirements").findOne({ id: String(targetId) });
+  if (!requirement) return { ok: false, error: "That requirement no longer exists." };
+
+  try {
+    const result = await db.collection("requirements").deleteOne({ id: String(targetId) });
+    if (result.deletedCount !== 1) {
+      return { ok: false, error: "The requirement could not be removed." };
+    }
+    await db
+      .collection("staff_status")
+      .deleteOne({ kind: "requirement", targetId: String(targetId) });
+  } catch (error) {
+    console.error("[admin] requirement delete failed", error.message);
+    return { ok: false, error: "The requirement could not be removed." };
+  }
+
+  await recordAudit({
+    action: "requirement.delete",
+    target: `requirement:${targetId}`,
+    detail: { title: requirement.title, owner: requirement.email },
+    actor: user.email,
+    actorRole: role,
+  });
+
+  revalidatePath("/admin/requirements");
+  revalidatePath("/requirements");
+  return { ok: true };
+}
+
 /** §7.4.4 — Inquiry Monitor decisions on member reports. */
 export async function resolveInquiryReport(reportId, status) {
   const { user, role } = await requirePermission("admin.inquiries");

@@ -6,6 +6,9 @@ import { getOpenReports } from "@/lib/inbox";
 import { resolveInquiryReport } from "@/lib/actions";
 import { plain, formatDate } from "@/lib/refs";
 
+const EXPORT_LINK =
+  "inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-[13px] font-semibold text-slate-600 transition hover:border-primary hover:text-primary";
+
 export const instant = false;
 
 export const metadata = { title: "Inquiries & disputes" };
@@ -34,7 +37,23 @@ export default async function AdminInquiriesPage() {
       <WorkspaceHeader
         title="Inquiries & disputes"
         description="Member reports on conversations, plus the fraud patterns the inbox flags automatically (bank details, payment changes)."
-        actions={<Badge tone={open.length ? "amber" : "green"}>{open.length} open</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={open.length ? "amber" : "green"}>{open.length} open</Badge>
+            <a className={EXPORT_LINK} href="/api/admin/inquiries/export?kind=inquiries&format=csv">
+              Export inquiries (CSV)
+            </a>
+            <a className={EXPORT_LINK} href="/api/admin/inquiries/export?kind=inquiries&format=xlsx">
+              Export inquiries (Excel)
+            </a>
+            <a className={EXPORT_LINK} href="/api/admin/inquiries/export?kind=reports&format=csv">
+              Export reports (CSV)
+            </a>
+            <a className={EXPORT_LINK} href="/api/admin/inquiries/export?kind=reports&format=xlsx">
+              Export reports (Excel)
+            </a>
+          </div>
+        }
       />
 
       <StatCards items={stats} />

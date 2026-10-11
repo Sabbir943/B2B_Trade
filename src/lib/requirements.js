@@ -237,6 +237,21 @@ export async function getPublishedRequirements({ category, q, limit = 60 } = {})
   }
 }
 
+/** Every requirement, newest first — the admin moderation page's full list. */
+export async function getAllRequirements(limit = 200) {
+  try {
+    return await db
+      .collection(REQUIREMENTS)
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+  } catch (error) {
+    console.error("[requirements] admin read failed", error.message);
+    return [];
+  }
+}
+
 /** Requirements still inside the moderation SLA window (§7.3.2). */
 export async function getRequirementsAwaitingModeration() {
   try {

@@ -10,7 +10,17 @@ export async function listUsers(limit = 500) {
     return await db
       .collection("user")
       .find({})
-      .project({ email: 1, name: 1, role: 1, tier: 1, emailVerified: 1, createdAt: 1 })
+      .project({
+        email: 1,
+        name: 1,
+        role: 1,
+        tier: 1,
+        emailVerified: 1,
+        createdAt: 1,
+        suspendedAt: 1,
+        suspendedReason: 1,
+        extraPermissions: 1,
+      })
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray();

@@ -19,6 +19,17 @@ function VerifiedFlash() {
   );
 }
 
+function SuspendedFlash() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("suspended") !== "1") return null;
+  return (
+    <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm leading-6 text-red-700">
+      This account has been suspended. Contact support if you think this is a
+      mistake.
+    </p>
+  );
+}
+
 function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +59,17 @@ function SignInForm() {
         /not verified/i.test(error.message ?? "")
       ) {
         setUnverified(email);
+        return;
+      }
+      // The session hook in auth.js refuses new sessions for suspended
+      // accounts, which surfaces as a session-creation failure.
+      if (
+        error.code === "FAILED_TO_CREATE_SESSION" ||
+        /failed to create session/i.test(error.message ?? "")
+      ) {
+        setError(
+          "This account has been suspended. Contact support if you think this is a mistake.",
+        );
         return;
       }
       setError(error.message ?? "Invalid email or password.");
@@ -80,6 +102,7 @@ function SignInForm() {
 
       <Suspense fallback={null}>
         <VerifiedFlash />
+        <SuspendedFlash />
       </Suspense>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">

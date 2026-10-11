@@ -1,16 +1,25 @@
 import Link from "next/link";
 import MarketSearch from "./market-search";
 import { shell } from "./shell";
+import { getSiteContentSection } from "@/lib/site-content";
 
-const popularTags = [
-  "Spices",
-  "Industrial Chemicals",
-  "Jute Products",
-  "Rice",
-  "Garment Accessories",
-];
+const DEFAULT_TAGS = ["Spices", "Industrial Chemicals", "Jute Products", "Rice", "Garment Accessories"];
 
-export default function HeroBanner() {
+/** Only same-origin paths — blocks CSS/JS payloads in style.url(). */
+function safeImageUrl(value, fallback) {
+  const raw = String(value || "").trim();
+  if (/^\/(?!\/)[^\s'"()\\]*$/.test(raw)) return raw;
+  return fallback;
+}
+
+export default async function HeroBanner() {
+  // Cached site content — the no-code editor's copy, with the shipped
+  // defaults as fallback until staff save their first edit.
+  const hero = await getSiteContentSection("home.hero");
+  const popularTags = hero.popularTags?.length ? hero.popularTags : DEFAULT_TAGS;
+  const imageDesktop = safeImageUrl(hero.imageDesktop, "/hero-desktop.webp");
+  const imageMobile = safeImageUrl(hero.imageMobile, "/hero-mobile.webp");
+
   return (
     <section
       className="relative overflow-hidden text-white"
@@ -20,7 +29,7 @@ export default function HeroBanner() {
         aria-hidden="true"
         className="absolute inset-0 md:hidden"
         style={{
-          backgroundImage: "url(/hero-mobile.webp)",
+          backgroundImage: `url(${imageMobile})`,
           backgroundSize: "cover",
           backgroundPosition: "center top",
         }}
@@ -29,7 +38,7 @@ export default function HeroBanner() {
         aria-hidden="true"
         className="absolute inset-0 hidden md:block"
         style={{
-          backgroundImage: "url(/hero-desktop.webp)",
+          backgroundImage: `url(${imageDesktop})`,
           backgroundSize: "cover",
           backgroundPosition: "right center",
         }}
@@ -56,16 +65,15 @@ export default function HeroBanner() {
             className="mt-4 text-[11px] font-bold uppercase tracking-[0.2em] sm:text-[13px]"
             style={{ color: "#F5A524" }}
           >
-            Global B2B Trade Marketplace
+            {hero.eyebrow}
           </p>
 
           <h1 className="mt-4 font-display text-[1.75rem] font-bold leading-[1.12] tracking-tight text-white sm:text-[2.3rem] lg:text-[2.9rem] xl:text-[3.25rem]">
-            Find suppliers. Reach buyers. Trade worldwide.
+            {hero.title}
           </h1>
 
           <p className="mt-4 max-w-xl text-[15px] leading-7 text-white/85 sm:text-base">
-            Connect with importers, exporters and manufacturers across the globe
-            — with sourcing support from search to shipment.
+            {hero.subtitle}
           </p>
 
           <div className="mt-7 hidden md:block">

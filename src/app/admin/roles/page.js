@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/session";
 import { ROLE_MATRIX, ROLE_LABELS, ROLES } from "@/lib/permissions";
 import { countUsersByRole, listUsers } from "@/lib/users";
 import RoleAssignForm from "@/components/role-assign-form";
+import StaffAccessManager from "@/components/staff-access-manager";
 
 export const instant = false;
 
@@ -26,6 +27,14 @@ export default async function AdminRolesPage() {
 
   const staffTotal = STAFF_ROLE_KEYS.reduce((sum, key) => sum + (roleCounts.get(key) || 0), 0);
   const superAdmins = users.filter((user) => user.role === ROLES.SUPER_ADMIN);
+  const staffAccounts = users
+    .filter((user) => STAFF_ROLE_KEYS.includes(user.role) && user.role !== ROLES.SUPER_ADMIN)
+    .map((user) => ({
+      email: user.email,
+      name: user.name || user.email,
+      role: user.role,
+      extraPermissions: Array.isArray(user.extraPermissions) ? user.extraPermissions : [],
+    }));
 
   const stats = [
     { label: "Staff accounts", value: String(staffTotal), hint: "Holding any staff role" },
@@ -65,6 +74,19 @@ export default async function AdminRolesPage() {
           ]}
           rows={rows}
         />
+      </Section>
+
+      <Section className="mt-8" title="Staff accounts">
+        <div className="panel p-5">
+          <p className="text-[13px] leading-6 text-slate-600">
+            Create a staff login, take away a staff login, or grant one account
+            an extra permission. Every change is written to the audit log with
+            your name and the reason.
+          </p>
+          <div className="mt-4">
+            <StaffAccessManager initialStaff={staffAccounts} />
+          </div>
+        </div>
       </Section>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

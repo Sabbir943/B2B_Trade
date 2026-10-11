@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { categories, hsCodes } from "@/lib/catalog";
+import { hsCodes } from "@/lib/catalog";
+import { listCategories } from "@/lib/categories-db";
 import { shell } from "@/components/shell";
 import { Badge, Button, PageHeader } from "@/components/ui";
 import { ArrowRightIcon } from "@/components/icons";
 
 export const metadata = { title: "All categories" };
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await listCategories();
   return (
     <>
       <PageHeader

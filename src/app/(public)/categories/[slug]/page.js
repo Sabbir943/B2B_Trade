@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { categories } from "@/lib/catalog";
 import { shell } from "@/components/shell";
 import { Badge, Button, EmptyState, PageHeader, SectionTitle } from "@/components/ui";
 import { getPublishedListings } from "@/lib/listings";
+import { listCategories, listCategoriesById } from "@/lib/categories-db";
 import { getProfiles } from "@/lib/profile";
 import { getTrustScores } from "@/lib/trust";
 import { connection } from "next/server";
@@ -20,7 +20,8 @@ export const metadata = { title: "Category" };
 export default async function CategoryPage({ params }) {
   await connection();
   const { slug } = await params;
-  const category = categories.find((item) => item.slug === slug);
+  const bySlug = await listCategoriesById();
+  const category = bySlug[slug];
   if (!category) notFound();
 
   const items = await getPublishedListings({ category: slug, limit: 60 });
@@ -42,7 +43,8 @@ export default async function CategoryPage({ params }) {
     };
   });
 
-  const related = categories.filter((item) => item.slug !== slug).slice(0, 6);
+  const all = await listCategories();
+  const related = all.filter((item) => item.slug !== slug).slice(0, 6);
 
   return (
     <>

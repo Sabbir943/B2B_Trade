@@ -1,12 +1,13 @@
 import { getPricingSettings } from "@/lib/membership";
 import { Badge, Button, EmptyState } from "@/components/ui";
-import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
+import { DataTable, Section, StatCards, WorkspaceHeader, Pill } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 import { listUsers } from "@/lib/users";
 import { getProfiles } from "@/lib/profile";
 import { formatDate } from "@/lib/refs";
 import TrialGrantForm from "@/components/trial-grant-form";
-import { ROLE_LABELS } from "@/lib/permissions";
+import MemberRowActions from "@/components/member-row-actions";
+import { ROLE_LABELS, ROLES } from "@/lib/permissions";
 
 export const instant = false;
 
@@ -44,7 +45,18 @@ export default async function AdminMembersPage() {
     role: ROLE_LABELS[user.role] || user.role || "Company Member",
     country: profileMap.get(user.email)?.country || "—",
     joined: formatDate(user.createdAt),
-    status: user.emailVerified ? "active" : "pending",
+    status: user.suspendedAt
+      ? "suspended"
+      : user.emailVerified
+        ? "active"
+        : "pending",
+    suspendReason: user.suspendedReason || "",
+    member: {
+      email: user.email,
+      emailVerified: Boolean(user.emailVerified),
+      suspended: Boolean(user.suspendedAt),
+      locked: user.role === ROLES.SUPER_ADMIN,
+    },
   }));
 
   return (
@@ -66,7 +78,25 @@ export default async function AdminMembersPage() {
               { key: "role", label: "Role" },
               { key: "country", label: "Country" },
               { key: "joined", label: "Joined" },
-              { key: "status", label: "Status", pill: true },
+              {
+                key: "status",
+                label: "Status",
+                render: (row) => (
+                  <span className="flex flex-col gap-1">
+                    <Pill>{row.status}</Pill>
+                    {row.suspendReason ? (
+                      <span className="max-w-[180px] text-[11px] leading-4 text-slate-500">
+                        {row.suspendReason}
+                      </span>
+                    ) : null}
+                  </span>
+                ),
+              },
+              {
+                key: "member",
+                label: "Actions",
+                render: (row) => <MemberRowActions {...row.member} />,
+              },
             ]}
             rows={rows}
           />

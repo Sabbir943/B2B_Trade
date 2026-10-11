@@ -1,15 +1,24 @@
 import { ModerationRow } from "@/components/moderation-actions";
+import DeleteRowAction from "@/components/delete-row-action";
 import { Badge } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
-import { getRequirementsAwaitingModeration } from "@/lib/requirements";
-import { moderateRequirement } from "@/lib/actions";
-import { categoriesById } from "@/lib/catalog";
+import { getAllRequirements, getRequirementsAwaitingModeration } from "@/lib/requirements";
+import { adminDeleteRequirement, moderateRequirement } from "@/lib/actions";
+import { listCategoriesById } from "@/lib/categories-db";
 import { plain, formatDate } from "@/lib/refs";
 
 export const instant = false;
 
 export const metadata = { title: "Requirement moderation" };
+
+const REQ_TONE = {
+  pending: "amber",
+  published: "green",
+  awarded: "green",
+  closed: "slate",
+  rejected: "red",
+};
 
 /**
  * §7.3.2 moderation queue — approving publishes the post on the public
@@ -17,8 +26,13 @@ export const metadata = { title: "Requirement moderation" };
  */
 export default async function AdminRequirementsPage() {
   await requirePermission("admin.requirements");
-  const pending = await getRequirementsAwaitingModeration();
+  const [pending, all] = await Promise.all([
+    getRequirementsAwaitingModeration(),
+    getAllRequirements(200),
+  ]);
+  const categoriesById = await listCategoriesById();
   const rows = plain(pending);
+  const allRows = plain(all);
 
   const stats = [
     { label: "In queue", value: String(rows.length), hint: "12h SLA" },
@@ -69,19 +83,67 @@ export default async function AdminRequirementsPage() {
               key: "actions",
               label: "Decision",
               render: (row) => (
-                <ModerationRow
-                  id={row.id}
-                  onAction={moderateRequirement}
-                  actions={[
-                    { label: "Approve", value: "approved" },
-                    { label: "Reject", value: "rejected", tone: "danger", needsReason: true },
-                  ]}
-                />
+                <span className="flex flex-col items-start gap-2">
+                  <ModerationRow
+                    id={row.id}
+                    onAction={moderateRequirement}
+                    actions={[
+                      { label: "Approve", value: "approved" },
+                      { label: "Reject", value: "rejected", tone: "danger", needsReason: true },
+                    ]}
+                  />
+                  <DeleteRowAction
+                    id={row.id}
+                    onAction={adminDeleteRequirement}
+                    title="Delete this requirement?"
+                    body="The buyer's post is removed from the board and from their dashboard. This is recorded in the audit log."
+                    confirmLabel="Delete post"
+                  />
+                </span>
               ),
             },
           ]}
           rows={rows}
           empty="Nothing waiting — every buyer post has been decided."
+        />
+      </Section>
+
+      <Section className="mt-8" title="All requirements">
+        <DataTable
+          columns={[
+            { key: "id", label: "Ref", emphasis: true },
+            {
+              key: "product",
+              label: "Requirement",
+              render: (row) => (
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-ink">{row.product}</span>
+                  <span className="text-[12px] font-normal text-slate-500">
+                    {categoriesById[row.category]?.name || row.category} · {row.quantity}{" "}
+                    {row.unit} · to {row.destinationPort || "unspecified"}
+                  </span>
+                </span>
+              ),
+            },
+            { key: "email", label: "Buyer" },
+            { key: "status", label: "Status", render: (row) => <Badge tone={REQ_TONE[row.status] || "slate"}>{row.status}</Badge> },
+            { key: "createdAt", label: "Submitted", render: (row) => formatDate(row.createdAt) },
+            {
+              key: "actions",
+              label: "Actions",
+              render: (row) => (
+                <DeleteRowAction
+                  id={row.id}
+                  onAction={adminDeleteRequirement}
+                  title="Delete this requirement?"
+                  body="The buyer's post is removed from the board and from their dashboard. This is recorded in the audit log."
+                  confirmLabel="Delete post"
+                />
+              ),
+            },
+          ]}
+          rows={allRows}
+          empty="No requirements in the system yet."
         />
       </Section>
 

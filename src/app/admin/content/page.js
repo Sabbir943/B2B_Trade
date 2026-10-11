@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
+import SiteContentEditor from "@/components/site-content-editor";
+import CategoryManager from "@/components/category-manager";
 import { requirePermission } from "@/lib/session";
 import { articles } from "@/lib/articles";
-import { insights, categories } from "@/lib/catalog";
+import { insights } from "@/lib/catalog";
 import { faqGroups } from "@/lib/content";
+import { readSiteContent, SITE_CONTENT_SECTIONS } from "@/lib/site-content";
+import { listCategories } from "@/lib/categories-db";
 
 export const instant = false;
 
@@ -20,7 +24,19 @@ const POLICIES = [
 export default async function AdminContentPage() {
   await requirePermission("admin.content");
 
-  const subcategories = categories.reduce((sum, item) => sum + item.sub.length, 0);
+  const [content, categories] = await Promise.all([
+    readSiteContent(),
+    listCategories(),
+  ]);
+
+  // Hydrate each section definition with its live (or default) value so the
+  // client editor starts from what the public pages currently show.
+  const sections = SITE_CONTENT_SECTIONS.map((section) => ({
+    ...section,
+    value: content[section.key] ?? {},
+  }));
+
+  const subcategories = categories.reduce((sum, item) => sum + (item.sub?.length || 0), 0);
   const faqCount = faqGroups.reduce((sum, group) => sum + (group.items?.length || 0), 0);
 
   const stats = [
@@ -44,10 +60,18 @@ export default async function AdminContentPage() {
     <>
       <WorkspaceHeader
         title="Content"
-        description="Everything members read — insight articles, category pages, policies and FAQs. The inventory below mirrors the files that ship with the app."
+        description="Edit the words and images buyers see, manage catalogue categories, and review the article and policy inventory below. Every save is audit-logged and goes live immediately."
       />
 
       <StatCards items={stats} />
+
+      <Section className="mt-6" title="Site editor">
+        <SiteContentEditor sections={sections} />
+      </Section>
+
+      <Section className="mt-6" title="Category manager">
+        <CategoryManager categories={categories} />
+      </Section>
 
       <Section className="mt-6" title="Insight articles">
         <DataTable
@@ -61,24 +85,6 @@ export default async function AdminContentPage() {
             { key: "status", label: "Status", pill: true },
           ]}
           rows={articleRows}
-        />
-      </Section>
-
-      <Section className="mt-6" title="Category library">
-        <DataTable
-          columns={[
-            { key: "slug", label: "Slug", emphasis: true },
-            { key: "name", label: "Category" },
-            { key: "hs", label: "HS chapter" },
-            { key: "subs", label: "Subcategories" },
-          ]}
-          rows={categories.map((item) => ({
-            id: item.slug,
-            slug: item.slug,
-            name: item.name,
-            hs: item.hs,
-            subs: String(item.sub.length),
-          }))}
         />
       </Section>
 

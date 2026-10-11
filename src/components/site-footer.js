@@ -3,6 +3,7 @@ import BrandLogo from "./brand-logo";
 import { shell } from "./shell";
 import { PAYMENT_CHIP_CLASS, paymentMarks } from "./payment-marks";
 import { APP_LEGAL_NAME, APP_LOCATION, APP_URL, WHATSAPP_URL } from "@/lib/brand";
+import { getSiteContentSection } from "@/lib/site-content";
 import {
   FacebookIcon,
   LinkedInIcon,
@@ -77,16 +78,17 @@ async function copyrightYear() {
 }
 
 export default async function SiteFooter() {
-  const year = await copyrightYear();
+  const [year, footer] = await Promise.all([
+    copyrightYear(),
+    getSiteContentSection("site.footer"),
+  ]);
   return (
     <footer className="bg-primary text-white">
       <div className={`grid gap-10 py-12 sm:py-14 lg:grid-cols-12 ${shell}`}>
         <div className="lg:col-span-4">
           <BrandLogo tone="onDark" showTagline />
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/65">
-            An international B2B import and export marketplace — connecting
-            buyers and suppliers across sourcing, verification, documentation
-            and logistics.
+            {footer.blurb}
           </p>
           <div className="mt-5 flex items-center gap-2 text-[13px] text-white/70">
             <MapPinIcon className="h-4 w-4 text-white/50" />

@@ -1,10 +1,11 @@
 import { ModerationRow } from "@/components/moderation-actions";
+import DeleteRowAction from "@/components/delete-row-action";
 import { Badge } from "@/components/ui";
 import { DataTable, Section, StatCards, WorkspaceHeader } from "@/components/workspace";
 import { requirePermission } from "@/lib/session";
 import { getAllListings, LISTING_STATUS } from "@/lib/listings";
-import { moderateListing } from "@/lib/actions";
-import { categoriesById } from "@/lib/catalog";
+import { listCategoriesById } from "@/lib/categories-db";
+import { adminDeleteListing, moderateListing } from "@/lib/actions";
 import { plain, formatDate } from "@/lib/refs";
 
 export const instant = false;
@@ -21,6 +22,7 @@ export default async function AdminListingsPage() {
   await requirePermission("admin.listings");
 
   const all = await getAllListings({ limit: 200 });
+  const categoriesById = await listCategoriesById();
   const pending = all.filter((row) => row.status === LISTING_STATUS.PENDING);
   const rows = [...pending, ...all.filter((row) => row.status !== LISTING_STATUS.PENDING)];
 
@@ -74,19 +76,29 @@ export default async function AdminListingsPage() {
             {
               key: "actions",
               label: "Decision",
-              render: (row) =>
-                row.status === LISTING_STATUS.PENDING ? (
-                  <ModerationRow
+              render: (row) => (
+                <span className="flex flex-col items-start gap-2">
+                  {row.status === LISTING_STATUS.PENDING ? (
+                    <ModerationRow
+                      id={row.id}
+                      onAction={moderateListing}
+                      actions={[
+                        { label: "Approve", value: "approved" },
+                        { label: "Remove", value: "rejected", tone: "danger", needsReason: true },
+                      ]}
+                    />
+                  ) : (
+                    <span className="text-[12px] text-slate-400">Decided</span>
+                  )}
+                  <DeleteRowAction
                     id={row.id}
-                    onAction={moderateListing}
-                    actions={[
-                      { label: "Approve", value: "approved" },
-                      { label: "Remove", value: "rejected", tone: "danger", needsReason: true },
-                    ]}
+                    onAction={adminDeleteListing}
+                    title="Delete this listing?"
+                    body="The product is removed from the catalogue for everyone. The seller can list it again later. This is recorded in the audit log."
+                    confirmLabel="Delete listing"
                   />
-                ) : (
-                  <span className="text-[12px] text-slate-400">Decided</span>
-                ),
+                </span>
+              ),
             },
           ]}
           rows={plain(rows)}

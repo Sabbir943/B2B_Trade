@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# staff image uploads for the content editor (served via /api/files)
+/.uploads/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

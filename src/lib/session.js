@@ -20,6 +20,10 @@ export async function getSessionContext() {
   const user = session.user;
   // Users created before the role field existed default to Company Member.
   const role = user.role || ROLES.COMPANY_MEMBER;
+  // Per-user extra permissions granted by the Super Admin (never client-set).
+  const extraPermissions = Array.isArray(user.extraPermissions)
+    ? user.extraPermissions.filter((item) => typeof item === "string")
+    : [];
 
   return {
     session,
@@ -27,26 +31,33 @@ export async function getSessionContext() {
     role,
     roleLabel: roleLabel(role),
     tier: user.tier || "free",
+    suspended: Boolean(user.suspendedAt),
+    extraPermissions,
     // Staff sessions are re-checked against the DB 2FA stamp in the gates
     // below (requirePermission / requireRole) — not cached on the context.
     staffRole: requiresStaff2fa(role),
   };
 }
 
-/** Requires a signed-in user; otherwise sends them to sign-in with a return path. */
+/** Requires a signed-in, non-suspended user; else sends them to sign-in. */
 export async function requireAuth(nextPath) {
   const context = await getSessionContext();
   if (!context.session) {
     const next = nextPath ? `?next=${encodeURIComponent(nextPath)}` : "";
     redirect(`/sign-in${next}`);
   }
+  // Suspended accounts keep a session until it expires, but must not act.
+  if (context.suspended) {
+    redirect(`/sign-in?suspended=1`);
+  }
   return context;
 }
 
 /**
  * The server-side permission gate.
- * Returns the session context when the role holds `permission`, otherwise
- * redirects: unauthenticated → /sign-in, wrong role → that role's home area.
+ * Returns the session context when the role holds `permission` (or the user
+ * has it as a per-user extra grant), otherwise redirects: unauthenticated →
+ * /sign-in, wrong role → that role's home area.
  *
  * Staff and Super-Admin sessions additionally require a fresh 2FA stamp
  * (checked against the user document); missing/stale → /secure-admin-login.
@@ -58,7 +69,9 @@ export async function requirePermission(permission, nextPath) {
     redirect("/secure-admin-login");
   }
 
-  if (!can(context.role, permission)) {
+  const granted =
+    can(context.role, permission) || context.extraPermissions.includes(permission);
+  if (!granted) {
     redirect(homeFor(context.role));
   }
 

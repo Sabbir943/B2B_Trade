@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { categories, insights, requirements, siteStats } from "@/lib/catalog";
+import { insights, requirements } from "@/lib/catalog";
+import { listCategories, listCategoriesById } from "@/lib/categories-db";
+import { getSiteContentSection } from "@/lib/site-content";
 import { shell } from "./shell";
 import { Badge, Button, EmptyState, SectionTitle } from "./ui";
 import {
@@ -39,13 +41,14 @@ const featuredImages = {
     "https://images.unsplash.com/photo-1552710307-537199cd41c0?auto=format&fit=crop&w=1200&h=800&q=80",
 };
 
-export function TrustStrip() {
-  if (!siteStats.enabled) return null;
+export async function TrustStrip() {
+  const stats = await getSiteContentSection("home.stats");
+  if (!stats.enabled) return null;
   return (
     <section className="border-b border-slate-200/70 bg-white">
       <div className={`py-6 ${shell}`}>
         <ul className="grid gap-2 sm:grid-cols-3 sm:gap-6">
-          {siteStats.lines.map((line) => (
+          {stats.lines.map((line) => (
             <li
               key={line}
               className="text-center text-[14px] font-semibold leading-6 text-ink sm:text-left"
@@ -59,13 +62,29 @@ export function TrustStrip() {
   );
 }
 
-export function FeaturedCategories() {
-  const items = featuredSlugs
-    .map((slug) => {
-      const category = categories.find((entry) => entry.slug === slug);
-      return category ? { ...category, image: featuredImages[slug] } : null;
-    })
-    .filter(Boolean);
+const fallbackImage = featuredImages.spices;
+
+export async function FeaturedCategories() {
+  const all = await listCategories();
+  const bySlug = new Map(all.map((category) => [category.slug, category]));
+
+  const items = [];
+  const used = new Set();
+  for (const slug of featuredSlugs) {
+    const category = bySlug.get(slug);
+    if (!category) continue;
+    items.push({ ...category, image: featuredImages[slug] || fallbackImage });
+    used.add(slug);
+  }
+  // Top up when a featured slug was renamed or removed by staff.
+  if (items.length < 6) {
+    for (const category of all) {
+      if (items.length >= 6) break;
+      if (used.has(category.slug)) continue;
+      items.push({ ...category, image: fallbackImage });
+      used.add(category.slug);
+    }
+  }
 
   return (
     <section className="bg-surface">
@@ -133,8 +152,9 @@ export function FeaturedCategories() {
   );
 }
 
-export function LiveRequirements() {
+export async function LiveRequirements() {
   const open = requirements.slice(0, 4);
+  const bySlug = await listCategoriesById();
 
   return (
     <section className="bg-white">
@@ -162,9 +182,7 @@ export function LiveRequirements() {
 
             <ul className="divide-y divide-slate-100">
               {open.map((item) => {
-                const hs = categories.find(
-                  (category) => category.slug === item.category,
-                )?.hs;
+                const hs = bySlug[item.category]?.hs;
                 return (
                   <li key={item.id}>
                     <Link
